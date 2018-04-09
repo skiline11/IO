@@ -54,6 +54,8 @@ def handle_keyboard():
 	event_array = pygame.event.get()
 	if event_array :
 		for event in event_array:
+			if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and bool(event.mod & pygame.KMOD_ALT)):
+				exit()
 			if event.type == pygame.QUIT:
 				is_end_of_game = True
 			if event.type == pygame.KEYUP:
@@ -79,7 +81,6 @@ def handle_keyboard():
 	else :
 		clock.tick(120)
 		if times_pressed > 0:
-			print("pressed")
 			if width - size[0] > knight_pos[0] + move[0] >= 0 and height - size[1] > knight_pos[1] + move[1] >= 0 :
 				knight_pos[0] += move[0]
 				knight_pos[1] += move[1]
@@ -93,6 +94,7 @@ pygame.init()
 width = 1280
 height = 720
 image_knight = pygame.image.load(os.path.join("rycerz_clear.jpg"))
+
 #tworzymy okno o zadanych wymiarach
 screen = pygame.display.set_mode((width, height))
 #rysujemy tlo
