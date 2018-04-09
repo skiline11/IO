@@ -48,24 +48,23 @@ def create_background(screen, width, height, image_knight):
 	
 
 # obsługuję klawiaturę i poruszam się rycerzem po mapie z uwzględnieniem że nie da się wyjść poza mapę
-def handle_keyboard():
-	global move, knight_pos, height, width, times_pressed, clock, size
-	is_end_of_game = False
+def game_input():
+	global move, knight_pos, height, width, clock, size, is_alive
 	event_array = pygame.event.get()
 	if event_array :
 		for event in event_array:
 			if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and bool(event.mod & pygame.KMOD_ALT):
-				exit()
+				is_alive = False
 			if event.type == pygame.QUIT:
-				is_end_of_game = True
+				is_alive = False
 			if event.type == pygame.KEYUP:
-				times_pressed -= 1
+				game_input.times_pressed -= 1
 				if event.key == pygame.K_RIGHT or event.key == pygame.K_LEFT:
 					move[0] = 0
 				if event.key == pygame.K_UP or event.key == pygame.K_DOWN:
 					move[1] = 0
 			if event.type == pygame.KEYDOWN:
-				times_pressed += 1
+				game_input.times_pressed += 1
 				if event.key == pygame.K_RIGHT:
 					move[0] = 1
 				if event.key == pygame.K_LEFT:
@@ -74,40 +73,57 @@ def handle_keyboard():
 					move[1] = -1
 				if event.key == pygame.K_DOWN:
 					move[1] = 1
-				if width - size[0] > knight_pos[0] + move[0] >= 0 and height - size[1] > knight_pos[1] + move[1] >= 0 :
-					knight_pos[0] += move[0]
-					knight_pos[1] += move[1]
-					print("pos = " + str(knight_pos))
 	else :
 		clock.tick(120)
-		if times_pressed > 0:
-			if width - size[0] > knight_pos[0] + move[0] >= 0 and height - size[1] > knight_pos[1] + move[1] >= 0 :
-				knight_pos[0] += move[0]
-				knight_pos[1] += move[1]
-	return is_end_of_game
-	
 
-# 16:9 --> 80px * x
-clock = pygame.time.Clock()
-background_table = create_background_table()
-pygame.init()
-width = 1280
-height = 720
-image_knight = pygame.image.load(os.path.join("rycerz_clear.png"))
+	if game_input.times_pressed > 0:
+		if width - size[0] > knight_pos[0] + move[0] >= 0 and height - size[1] > knight_pos[1] + move[1] >= 0 :
+			knight_pos[0] += move[0]
+			knight_pos[1] += move[1]
+		print("pos = " + str(knight_pos))
 
-#tworzymy okno o zadanych wymiarach
-screen = pygame.display.set_mode((width, height))
-#rysujemy tlo
-background = create_background(screen, width, height, image_knight)
-knight_pos = [0, 0]
-move = [0, 0]
-size = (width / 16, height / 9)
-is_end_of_game = False
-times_pressed = 0
 
-while not is_end_of_game:
-	is_end_of_game = handle_keyboard()
+game_input.times_pressed = 0
+
+def game_draw():
+	global screen, background, knight_pos, screen, width, height, image_knight
+	background = create_background(screen, width, height, image_knight)
 	screen.blit(background, (0, 0))
 	screen.blit(image_knight, (knight_pos[0] , knight_pos[1]))
 	pygame.display.flip()
-	
+
+def start_game():
+	global background_table, image_knight, global_state
+	global_state = 1
+	background_table = create_background_table()
+	image_knight = pygame.image.load(os.path.join("rycerz_clear.png"))
+
+# 16:9 --> 80px * x
+
+pygame.init()
+
+width = 1280
+height = 720
+screen = pygame.display.set_mode((width, height))
+clock = pygame.time.Clock()
+
+
+knight_pos = [0, 0]
+move = [0, 0]
+size = (width / 16, height / 9)
+
+
+is_alive = True
+global_state = 0
+
+start_game()
+
+while is_alive:
+	if global_state == 0: #menu
+		menu_input()
+		menu_draw()
+		continue
+	if global_state == 1: # ingame
+		game_input()
+		game_draw()
+		continue
