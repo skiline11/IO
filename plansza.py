@@ -71,7 +71,7 @@ def create_map():
 
 # tworzę okienko i rysuję na nim mapę
 def create_background(screen, width, height, image_knight):
-	global el_horizontal, el_vertical, monsters
+	global el_horizontal, el_vertical
 	new_background = pygame.Surface((width, height))
 
 	x_offset = int(map_view[0]/el_size[0])
@@ -232,15 +232,31 @@ def draw_monsters():
 			screen.blit(monster.image[int(monster_view)], pos)
 
 
+def draw_trees():
+	global trees, tree_view, map_view, monsters, screen, monsters
+	for tree in trees:
+		print("rys drzewo")
+		if map_view[0] - (3 * el_size[0]) <= tree.x * el_size[0] <= map_view[0] + width and map_view[1] - (4 * el_size[1]) <= tree.y * el_size[1] <= map_view[1] + height:
+			print("rysujemy --------------------")
+			pos = (tree.x * el_size[0] - map_view[0], tree.y * el_size[1] - map_view[1])
+			screen.blit(tree.image[int(tree_view)], pos)
+			print("Po narysowaniu  na pos = " + str(tree.x) + ", " + str(el_size[0]) + ", " + str(map_view[0]) + "!!!!!")
+			print(str)
+
+
 def game_draw():
-	global screen, background, knight_pos, screen, width, height, image_knight, monsters, monster_view
+	global screen, background, knight_pos, screen, width, height, image_knight, monster_view, tree_view
 	background = create_background(screen, width, height, image_knight)
 	screen.blit(background, (0, 0))
 	screen.blit(image_knight, (knight_pos[0], knight_pos[1]))
 	draw_monsters()
-	monster_view = (monster_view + 0.125)
+	draw_trees()
+	monster_view += 0.125
+	tree_view += 0.25
 	if monster_view >= 2.0:
-		monster_view -= 2.0
+		monster_view = 0
+	if tree_view >= 8.0:
+		tree_view = 0
 	pygame.display.flip()
 
 
@@ -249,6 +265,13 @@ class Monster(object):
 		self.x = x
 		self.y = y
 		self.image = [pygame.image.load(os.path.join("monster/monster_" + str(id) + ".png")) for id in range(1, 3)]
+
+
+class Tree(object):
+	def __init__(self, x, y):
+		self.x = x
+		self.y = y
+		self.image = [pygame.image.load(os.path.join("tree/v2_tree-" + str(id) + ".png")) for id in range(8)]
 
 
 def start_game():
@@ -278,6 +301,13 @@ e2 = [(17, 3), (29, 3), (17, 22), (29, 22), (4, 12), (42, 12)]
 enemies_positions = e1 + e2
 monsters = [Monster(pos_x, pos_y) for pos_x, pos_y in enemies_positions]
 monster_view = 0.0
+
+t1 = [(23 - 3.625, 10), (27, 10), (23 - 3.625, 14), (27, 14)]
+trees_positions = t1
+trees = [Tree(pos_x, pos_y) for pos_x, pos_y in trees_positions]
+tree_view = 0.0
+
+
 
 is_alive = True
 global_state = MENU_MODE
