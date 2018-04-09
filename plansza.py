@@ -150,7 +150,7 @@ def game_draw():
 	global screen, background, knight_pos, screen, width, height, image_knight
 	background = create_background(screen, width, height, image_knight)
 	screen.blit(background, (0, 0))
-	screen.blit(image_knight, (knight_pos[0] , knight_pos[1]))
+	screen.blit(image_knight, (knight_pos[0], knight_pos[1]))
 	pygame.display.flip()
 
 def start_game():
@@ -169,12 +169,11 @@ height = 720
 screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 
-map_view = [50, 50]
-knight_pos = [200, 200]
-knight_pos_real = [0, 0]
 move = [0, 0]
 el_size = (width / el_horizontal, height / el_vertical)
-
+map_view = [16*el_size[0], 9*el_size[1]]
+# knight_pos = [400, 200]
+knight_pos = [7.5*el_size[0], 3.5*el_size[1]]
 
 is_alive = True
 global_state = 0
