@@ -4,54 +4,60 @@ import time
 import os.path
 
 
+el_horizontal = 16
+el_vertical = 9
+
 # Na razie tworzę sobie taką szachownicę, trzeba będzie wymyśleć jakieś mapki
 def create_background_table():
 	color_grass = (100, 204, 0)
 	color_stone = (156, 156, 156)
-	colors = [color_grass, color_stone]
+
+	color_grass2 = (255, 204, 0)
+	color_stone2 = (255, 156, 156)
+	colors = [color_grass, color_stone, color_grass2, color_stone2]
 
 	background_table = [
-		[
-			{
-				"coordinates" : {
-					"x": x,
-					"y": y
-				},
-				"color" : colors[(x + y)%2],
-			} for x in range(16)
-		] for y in range(9)
+		(
+			[{"color" : colors[2+(x + y)%2]} for x in range(el_horizontal)]+
+			[{"color" : colors[(x + y)%2]} for x in range(el_horizontal)]
+		) for y in range(el_vertical)
+	]
+	background_table += [
+		(
+			[{"color" : colors[(1+x + y)%2]} for x in range(el_horizontal)]+
+			[{"color" : colors[2+(1+x + y)%2]} for x in range(el_horizontal)]
+		) for y in range(el_vertical)
 	]
 	
-	for x in range(16):
-		for y in range(9):
-			print(colors[(x+y)%2])
 	return background_table
 
 
 # tworzę okienko i rysuję na nim mapę
 def create_background(screen, width, height, image_knight):
+	global background_table, el_horizontal, el_vertical
 	background = pygame.Surface((width, height))
-	id_color = 0
-	x_pos = 0
-	y_pos = 0
-	x_size = width / 16
-	y_size = height / 9
 
-	for tab in background_table:
-		for el in tab:
+	id_color = 0
+	x_size = width / el_horizontal
+	y_size = height / el_vertical
+
+	for x in range(el_horizontal):
+		for y in range(el_vertical):
+			el = background_table[y+map_view[1]][x+map_view[0]]
 			pygame.draw.rect(
 				background,
 				el["color"],
-				pygame.Rect(int(el["coordinates"]["x"]) * x_size, int(el["coordinates"]["y"]) * y_size, x_size, y_size)
+				pygame.Rect(int(x) * x_size, int(y) * y_size, x_size, y_size)
 			)
 	return background
 	
 
 # obsługuję klawiaturę i poruszam się rycerzem po mapie z uwzględnieniem że nie da się wyjść poza mapę
 def game_input():
+	move_val = 5
 	global move, knight_pos, height, width, clock, size, is_alive
 	event_array = pygame.event.get()
-	if event_array :
+	if event_array:
 		for event in event_array:
 			if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and bool(event.mod & pygame.KMOD_ALT):
 				is_alive = False
@@ -66,21 +72,19 @@ def game_input():
 			if event.type == pygame.KEYDOWN:
 				game_input.times_pressed += 1
 				if event.key == pygame.K_RIGHT:
-					move[0] = 1
+					move[0] = move_val
 				if event.key == pygame.K_LEFT:
-					move[0] = -1
+					move[0] = -move_val
 				if event.key == pygame.K_UP:
-					move[1] = -1
+					move[1] = -move_val
 				if event.key == pygame.K_DOWN:
-					move[1] = 1
-	else :
+					move[1] = move_val
+	else:
 		clock.tick(120)
-
 	if game_input.times_pressed > 0:
 		if width - size[0] > knight_pos[0] + move[0] >= 0 and height - size[1] > knight_pos[1] + move[1] >= 0 :
 			knight_pos[0] += move[0]
 			knight_pos[1] += move[1]
-		print("pos = " + str(knight_pos))
 
 
 game_input.times_pressed = 0
@@ -107,7 +111,7 @@ height = 720
 screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 
-
+map_view = [2,2]
 knight_pos = [0, 0]
 move = [0, 0]
 size = (width / 16, height / 9)
