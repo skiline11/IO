@@ -38,16 +38,23 @@ def create_background(screen, width, height, image_knight):
 	background = pygame.Surface((width, height))
 
 	id_color = 0
-	x_size = width / el_horizontal
-	y_size = height / el_vertical
+	x_offset = int(map_view[0]/el_size[0])
+	y_offset = int(map_view[1]/el_size[1])
+	x_remainder = map_view[0]%el_size[0]
+	y_remainder = map_view[1]%el_size[1]
+	
 
-	for x in range(el_horizontal):
-		for y in range(el_vertical):
-			el = background_table[y+map_view[1]][x+map_view[0]]
+	for x in range(el_horizontal+1):
+		for y in range(el_vertical+1):
+			if y+y_offset >= len(background_table):
+				continue
+			if x+x_offset >= len(background_table[y+y_offset]):
+				continue
+			el = background_table[y+y_offset][x+x_offset]
 			pygame.draw.rect(
 				background,
 				el["color"],
-				pygame.Rect(int(x) * x_size, int(y) * y_size, x_size, y_size)
+				pygame.Rect(int(x) * el_size[0] - x_remainder, int(y) * el_size[1] - y_remainder, el_size[0], el_size[1])
 			)
 	return background
 	
@@ -55,7 +62,8 @@ def create_background(screen, width, height, image_knight):
 # obsługuję klawiaturę i poruszam się rycerzem po mapie z uwzględnieniem że nie da się wyjść poza mapę
 def game_input():
 	move_val = 5
-	global move, knight_pos, height, width, clock, size, is_alive
+	global move, knight_pos, height, width, clock, el_size, is_alive
+	map_movable_area = 0.1
 	event_array = pygame.event.get()
 	if event_array:
 		for event in event_array:
@@ -82,10 +90,18 @@ def game_input():
 	else:
 		clock.tick(120)
 	if game_input.times_pressed > 0:
-		if width - size[0] > knight_pos[0] + move[0] >= 0 and height - size[1] > knight_pos[1] + move[1] >= 0 :
+		knight_pos_real[0]
+		if (width *(1-map_movable_area) - el_size[0] >= knight_pos[0] + move[0] >= width *map_movable_area):
 			knight_pos[0] += move[0]
+		else:
+			print("map_move_x")
+		#else if( >= map_view[0] + move[0] >= 0):
+		#	map_view[0] += move[0]; 
+			
+		if (height*(1-map_movable_area) - el_size[1] >= knight_pos[1] + move[1] >= height*map_movable_area):
 			knight_pos[1] += move[1]
-
+		else:
+			print("map_move_y")
 
 game_input.times_pressed = 0
 
@@ -111,10 +127,11 @@ height = 720
 screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 
-map_view = [2,2]
-knight_pos = [0, 0]
+map_view = [50,50]
+knight_pos = [200, 200]
+knight_pos_real = [0,0]
 move = [0, 0]
-size = (width / 16, height / 9)
+el_size = (width / el_horizontal, height / el_vertical)
 
 
 is_alive = True
