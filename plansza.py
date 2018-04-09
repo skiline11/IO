@@ -13,7 +13,10 @@ PLAY_MODE = 1
 MENU_MODE = 0
 menu_obj = []
 
+
 def create_map():
+	global enemies_positions
+
 	color_grass = (100, 204, 0)
 	color_stone = (156, 156, 156)
 	color_monster = (255, 0, 0)
@@ -31,17 +34,14 @@ def create_map():
 	]
 
 	# dodaje przeciwnikow
-	e1 = [(6, 2), (40, 2), (6, 23), (40, 23)]
-	e2 = [(17, 3), (29, 3), (17, 22), (29, 22), (4, 12), (42, 12)]
-	enemies_positions = e1 + e2
 	for pos_x, pos_y in enemies_positions:
 		for x in range(2):
 			for y in range(2):
 				my_map[pos_x + x][pos_y + y]["color"] = colors["monster"]
 				my_map[pos_x + x][pos_y + y]["solid"] = True
 
+
 	#dodaje kamienie
-	s1 = []
 	# pionowe
 	for y in range(4, 23): # bez 24
 		for x in [6, 23, 40]:
@@ -61,7 +61,6 @@ def create_map():
 		for y in [0, 26]:
 			my_map[x][y]["color"] = colors["end_of_map"]
 			my_map[x][y]["solid"] = True
-
 	for y in range(27):
 		for x in [0, 47]:
 			my_map[x][y]["color"] = colors["end_of_map"]
@@ -70,18 +69,15 @@ def create_map():
 	return my_map
 
 
-
 # tworzę okienko i rysuję na nim mapę
 def create_background(screen, width, height, image_knight):
-	global my_map, el_horizontal, el_vertical
-	background = pygame.Surface((width, height))
+	global el_horizontal, el_vertical, monsters
+	new_background = pygame.Surface((width, height))
 
-	id_color = 0
 	x_offset = int(map_view[0]/el_size[0])
 	y_offset = int(map_view[1]/el_size[1])
 	x_remainder = map_view[0]%el_size[0]
 	y_remainder = map_view[1]%el_size[1]
-	
 
 	for x in range(el_horizontal+1):
 		for y in range(el_vertical+1):
@@ -91,11 +87,11 @@ def create_background(screen, width, height, image_knight):
 				continue
 			el = my_map[x+x_offset][y+y_offset]
 			pygame.draw.rect(
-				background,
+				new_background,
 				el["color"],
 				pygame.Rect(int(x) * el_size[0] - x_remainder, int(y) * el_size[1] - y_remainder, el_size[0], el_size[1])
 			)
-	return background
+	return new_background
 
 
 def init_menu():
@@ -104,8 +100,7 @@ def init_menu():
 	button_height = 100
 	horizontal = width / 2 - button_width / 2
 	vertical = height / 2 - button_height / 2
-	menu_obj.append(Button((horizontal, vertical), (button_width, button_height),
-	                       colors.Colors.BLUE, colors.Colors.RED, start_game, "PLAY"))
+	menu_obj.append(Button((horizontal, vertical), (button_width, button_height), colors.Colors.BLUE, colors.Colors.RED, start_game, "PLAY"))
 
 
 def menu_draw():
@@ -140,7 +135,8 @@ def menu_input():
 def game_input():
 	move_val = 10
 	global move, knight_pos, height, width, clock, el_size, is_alive, my_map, global_state
-	map_movable_area = 0.1
+	map_movable_area_x = 1.0/16
+	map_movable_area_y = 1.0/9
 	event_array = pygame.event.get()
 	if event_array:
 		for event in event_array:
@@ -167,75 +163,100 @@ def game_input():
 				if event.key == pygame.K_ESCAPE:
 					global_state = MENU_MODE
 
-	real_knight_pos=[0,0]
-	real_knight_pos[0] = knight_pos[0]+map_view[0]
-	real_knight_pos[1] = knight_pos[1]+map_view[1]
+	real_knight_pos = [0, 0]
+	real_knight_pos[0] = knight_pos[0] + map_view[0]
+	real_knight_pos[1] = knight_pos[1] + map_view[1]
 
 	if game_input.times_pressed > 0:
+		print("tutaj")
 		# jeśli znajdujemu się wystarczająco daleko od brzegów planszy to nie będziemy przesówać jej widoku
 		# tylko przesuniemy się rycerzem
-
 		print(real_knight_pos)
-		cur_el_x_front = int((real_knight_pos[0])/el_size[0])
-		cur_el_x_end = int((real_knight_pos[0]+el_size[0]-1)/el_size[0])
-		next_el_y = int((real_knight_pos[1]+el_size[1]+move[1])/el_size[1])
-		prev_el_y = int((real_knight_pos[1]+move[1])/el_size[1])
+		cur_el_x_front = int((real_knight_pos[0]) / el_size[0])
+		cur_el_x_end = int((real_knight_pos[0] + el_size[0] - 1) / el_size[0])
+		next_el_y = int((real_knight_pos[1] + el_size[1] + move[1]) / el_size[1])
+		prev_el_y = int((real_knight_pos[1] + move[1]) / el_size[1])
 
-		cur_el_y_top = int((real_knight_pos[1])/el_size[1])
-		cur_el_y_bottom = int((real_knight_pos[1]+el_size[1]-1)/el_size[1])
-		next_el_x = int((real_knight_pos[0]+el_size[0]+move[0])/el_size[0])
-		prev_el_x = int((real_knight_pos[0]+move[0])/el_size[0])
+		cur_el_y_top = int((real_knight_pos[1]) / el_size[1])
+		cur_el_y_bottom = int((real_knight_pos[1] + el_size[1] - 1) / el_size[1])
+		next_el_x = int((real_knight_pos[0] + el_size[0] + move[0]) / el_size[0])
+		prev_el_x = int((real_knight_pos[0] + move[0]) / el_size[0])
 
 		if move[0] != 0:
-			if (my_map[next_el_x][cur_el_y_top]["solid"] or my_map[next_el_x][cur_el_y_bottom]["solid"]) and move[0] > 0:
-				move[0] = (next_el_x-1)*el_size[0] - real_knight_pos[0]
-			if (my_map[prev_el_x][cur_el_y_top]["solid"] or my_map[prev_el_x][cur_el_y_bottom]["solid"]) and move[0] < 0:
-				move[0] = (prev_el_x+1)*el_size[0] - real_knight_pos[0]
+			print("poziomo")
+			if (my_map[next_el_x][cur_el_y_top]["solid"] or my_map[next_el_x][cur_el_y_bottom]["solid"]) and move[
+				0] > 0:
+				move[0] = (next_el_x - 1) * el_size[0] - real_knight_pos[0]
+			if (my_map[prev_el_x][cur_el_y_top]["solid"] or my_map[prev_el_x][cur_el_y_bottom]["solid"]) and move[
+				0] < 0:
+				move[0] = (prev_el_x + 1) * el_size[0] - real_knight_pos[0]
 
-			if ((knight_pos[0] + move[0] <= width *(1-map_movable_area) - el_size[0] and
-				knight_pos[0] + move[0] >= width * map_movable_area) or
-				(knight_pos[0] + move[0] <= width * map_movable_area and
-				 map_view[0]==0 and knight_pos[0] + move[0] >= 0) or
-				(knight_pos[0] + move[0] >= width *(1-map_movable_area) - el_size[0] and 
-				 map_view[0]==len(my_map)*el_size[0]-width and knight_pos[0] + move[0] <= width - el_size[0])):
+			if ((knight_pos[0] + move[0] <= width * (1 - map_movable_area_x) - el_size[0] and
+							 knight_pos[0] + move[0] >= width * map_movable_area_x) or
+					(knight_pos[0] + move[0] <= width * map_movable_area_x and
+							 map_view[0] == 0 and knight_pos[0] + move[0] >= 0) or
+					(knight_pos[0] + move[0] >= width * (1 - map_movable_area_x) - el_size[0] and
+							 map_view[0] == len(my_map) * el_size[0] - width and knight_pos[0] + move[0] <= width -
+						el_size[0])):
 				knight_pos[0] += move[0]
-			elif len(my_map)*el_size[0]-width >= map_view[0] + move[0] >= 0:
+			elif len(my_map) * el_size[0] - width >= map_view[0] + move[0] >= 0:
 				map_view[0] += move[0]
-			
-		if move[1] != 0:
-			if (my_map[cur_el_x_front][next_el_y]["solid"] or my_map[cur_el_x_end][next_el_y]["solid"]) and move[1] > 0:
-				move[1] = (next_el_y-1)*el_size[1] - real_knight_pos[1]
-			if (my_map[cur_el_x_front][prev_el_y]["solid"] or my_map[cur_el_x_end][prev_el_y]["solid"]) and move[1] < 0:
-				move[1] = (prev_el_y+1)*el_size[1] - real_knight_pos[1]
 
-			if ((knight_pos[1] + move[1] <= height*(1-map_movable_area) - el_size[1] and 
-				 knight_pos[1] + move[1] >= height*map_movable_area) or
-				(knight_pos[1] + move[1] <= height*map_movable_area and 
-				 map_view[1]==0 and knight_pos[1] + move[1] >= 0) or
-				(knight_pos[1] + move[1] >= height*(1-map_movable_area) - el_size[1] and 
-				 map_view[1]==len(my_map[0])*el_size[1]-height and knight_pos[1] + move[1] <= height - el_size[1])):
-					knight_pos[1] += move[1]
-			elif len(my_map[0])*el_size[1]-height >= map_view[1] + move[1] >= 0:
+		if move[1] != 0:
+			print("pionowo")
+			if (my_map[cur_el_x_front][next_el_y]["solid"] or my_map[cur_el_x_end][next_el_y]["solid"]) and move[1] > 0:
+				move[1] = (next_el_y - 1) * el_size[1] - real_knight_pos[1]
+			if (my_map[cur_el_x_front][prev_el_y]["solid"] or my_map[cur_el_x_end][prev_el_y]["solid"]) and move[1] < 0:
+				move[1] = (prev_el_y + 1) * el_size[1] - real_knight_pos[1]
+
+			if ((knight_pos[1] + move[1] <= height * (1 - map_movable_area_y) - el_size[1] and
+							 knight_pos[1] + move[1] >= height * map_movable_area_y) or
+					(knight_pos[1] + move[1] <= height * map_movable_area_y and
+							 map_view[1] == 0 and knight_pos[1] + move[1] >= 0) or
+					(knight_pos[1] + move[1] >= height * (1 - map_movable_area_y) - el_size[1] and
+							 map_view[1] == len(my_map[0]) * el_size[1] - height and knight_pos[1] + move[1] <= height -
+						el_size[1])):
+				knight_pos[1] += move[1]
+			elif len(my_map[0]) * el_size[1] - height >= map_view[1] + move[1] >= 0:
 				map_view[1] += move[1]
 		
 
 game_input.times_pressed = 0
 
+
+def draw_monsters():
+	global monsters, monster_view, map_view
+	for monster in monsters:
+		if map_view[0] - (2 * el_size[0]) <= monster.x * el_size[0] <= map_view[0] + width and map_view[1] - (2 * el_size[1]) <= monster.y * el_size[1] <= map_view[1] + height:
+			pos = (monster.x * el_size[0] - map_view[0], monster.y * el_size[1] - map_view[1])
+			screen.blit(monster.image[int(monster_view)], pos)
+
+
 def game_draw():
-	global screen, background, knight_pos, screen, width, height, image_knight
+	global screen, background, knight_pos, screen, width, height, image_knight, monsters, monster_view
 	background = create_background(screen, width, height, image_knight)
 	screen.blit(background, (0, 0))
 	screen.blit(image_knight, (knight_pos[0], knight_pos[1]))
+	draw_monsters()
+	monster_view = (monster_view + 0.125)
+	if monster_view >= 2.0:
+		monster_view -= 2.0
 	pygame.display.flip()
 
 
+class Monster(object):
+	def __init__(self, x, y):
+		self.x = x
+		self.y = y
+		self.image = [pygame.image.load(os.path.join("monster/monster_" + str(id) + ".png")) for id in range(1, 3)]
+
+
 def start_game():
-	global my_map, image_knight, global_state, knight_pos, map_view, move
-	# my_map = create_background_table()
+	global my_map, image_knight, global_state, knight_pos, monsters, map_view, move
 	my_map = create_map()
 	image_knight = pygame.image.load(os.path.join("rycerz_clear.png"))
-	map_view = [50, 50]
-	knight_pos = [200, 200]
+	map_view = [16*el_size[0], 9*el_size[1]]
+	knight_pos = [7.5*el_size[0], 3.5*el_size[1]]
 	move = [0, 0]
 	global_state = PLAY_MODE
 
@@ -248,10 +269,15 @@ height = 720
 screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 
+
 el_size = (width / el_horizontal, height / el_vertical)
-map_view = [16*el_size[0], 9*el_size[1]]
-# knight_pos = [400, 200]
-knight_pos = [7.5*el_size[0], 3.5*el_size[1]]
+
+
+e1 = [(6, 2), (40, 2), (6, 23), (40, 23)]
+e2 = [(17, 3), (29, 3), (17, 22), (29, 22), (4, 12), (42, 12)]
+enemies_positions = e1 + e2
+monsters = [Monster(pos_x, pos_y) for pos_x, pos_y in enemies_positions]
+monster_view = 0.0
 
 is_alive = True
 global_state = MENU_MODE
@@ -260,11 +286,11 @@ init_menu()
 
 while is_alive:
 	dt = clock.tick(framerate)
-	if global_state == MENU_MODE: #menu
-		menu_draw()
+	if global_state == 0: #menu
 		menu_input()
+		menu_draw()
 		continue
-	if global_state == PLAY_MODE: # ingame
+	if global_state == 1: # ingame
 		game_input()
 		game_draw()
 		continue
