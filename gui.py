@@ -35,7 +35,7 @@ class Button:
 		# Unhighlightened button
 		self.normal = pygame.Surface((self.width, self.height), pygame.HWSURFACE|pygame.SRCALPHA)
 		self.normal.fill(color)
-		rendered_txt = font.render(text, True, colors.Colors.BLACK)
+		rendered_txt = font.render(text, True, colors.Colors.WHITE)
 		text_rect = rendered_txt.get_rect()
 		self.normal.blit(rendered_txt, (self.width / 2 - text_rect[2] / 2, self.height / 2 - text_rect[3] / 2))
 

@@ -95,19 +95,19 @@ def create_background(screen, width, height, image_knight):
 
 
 def init_menu():
-	global screen, width, height
-	button_width = 100
+	global screen, width, height, image_menu
+	button_width = 200
 	button_height = 100
-	horizontal = width / 2 - button_width / 2
-	vertical = height / 2 - button_height / 2
-	menu_obj.append(Button((horizontal, vertical), (button_width, button_height), colors.Colors.BLUE, colors.Colors.RED, start_game, "PLAY"))
-
+	horizontal = width / 2 - button_width / 2 - 77
+	vertical = height / 2 - button_height / 2 + 250
+	menu_obj.append(Button((horizontal, vertical), (button_width, button_height), colors.Colors.BLACK, colors.Colors.RED, start_game, "PLAY"))
+	image_menu = pygame.image.load(os.path.join("menu.jpg"))
 
 def menu_draw():
-	global screen
+	global screen, image_menu
 
 	screen.fill(colors.Colors.WHITE)
-
+	screen.blit(image_menu, (0, 0))
 	for obj in menu_obj:
 		obj.render(screen)
 
@@ -291,7 +291,6 @@ width = 1280
 height = 720
 screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
-
 
 el_size = (width / el_horizontal, height / el_vertical)
 
