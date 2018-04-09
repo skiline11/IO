@@ -4,7 +4,7 @@ import colors
 pygame.init()
 
 
-def mouse_over(size, pos):
+def mouse_over(pos, size):
 	mouse_pos = pygame.mouse.get_pos()
 	if pos[0] < mouse_pos[0] < pos[0] + size[0] and pos[1] < mouse_pos[1] < pos[1] + size[1]:
 		return True
@@ -52,6 +52,7 @@ class Button:
 			self.is_active = True
 		else:
 			to.blit(self.normal, (self.left + pos[0], self.top + pos[1]))
+			self.is_active = False
 
 	def pressed(self):
 		self.event_handler()

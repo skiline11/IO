@@ -11,7 +11,7 @@ el_vertical = 9
 framerate = 60
 PLAY_MODE = 1
 MENU_MODE = 0
-
+menu_obj = []
 
 def create_map():
 	color_grass = (100, 204, 0)
@@ -98,22 +98,22 @@ def create_background(screen, width, height, image_knight):
 	return background
 
 
-def play():
-	global global_state
-	global_state = PLAY_MODE
-
-
-def menu_draw():
+def init_menu():
 	global screen, width, height
-	objects = []
 	button_width = 100
 	button_height = 100
 	horizontal = width / 2 - button_width / 2
 	vertical = height / 2 - button_height / 2
-	screen.fill(colors.Colors.WHITE)
-	objects.append(Button((horizontal, vertical), (button_width, button_height), colors.Colors.BLUE, colors.Colors.RED, play, "PLAY"))
+	menu_obj.append(Button((horizontal, vertical), (button_width, button_height),
+	                       colors.Colors.BLUE, colors.Colors.RED, start_game, "PLAY"))
 
-	for obj in objects:
+
+def menu_draw():
+	global screen
+
+	screen.fill(colors.Colors.WHITE)
+
+	for obj in menu_obj:
 		obj.render(screen)
 
 	pygame.display.flip()
@@ -133,13 +133,13 @@ def menu_input():
 						button.pressed()
 						button.is_active = False
 						break
-	clock.tick(120)
+	clock.tick(framerate)
 
 
 # obsługuję klawiaturę i poruszam się rycerzem po mapie z uwzględnieniem że nie da się wyjść poza mapę
 def game_input():
 	move_val = 10
-	global move, knight_pos, height, width, clock, el_size, is_alive, my_map
+	global move, knight_pos, height, width, clock, el_size, is_alive, my_map, global_state
 	map_movable_area = 0.1
 	event_array = pygame.event.get()
 	if event_array:
@@ -164,6 +164,8 @@ def game_input():
 					move[1] = -move_val
 				if event.key == pygame.K_DOWN:
 					move[1] = move_val
+				if event.key == pygame.K_ESCAPE:
+					global_state = MENU_MODE
 
 	real_knight_pos=[0,0]
 	real_knight_pos[0] = knight_pos[0]+map_view[0]
@@ -226,6 +228,7 @@ def game_draw():
 	screen.blit(image_knight, (knight_pos[0], knight_pos[1]))
 	pygame.display.flip()
 
+
 def start_game():
 	global my_map, image_knight, global_state, knight_pos, map_view, move
 	# my_map = create_background_table()
@@ -234,6 +237,7 @@ def start_game():
 	map_view = [50, 50]
 	knight_pos = [200, 200]
 	move = [0, 0]
+	global_state = PLAY_MODE
 
 # 16:9 --> 80px * x
 
@@ -252,13 +256,13 @@ knight_pos = [7.5*el_size[0], 3.5*el_size[1]]
 is_alive = True
 global_state = MENU_MODE
 
-start_game()
+init_menu()
 
 while is_alive:
 	dt = clock.tick(framerate)
 	if global_state == MENU_MODE: #menu
-		menu_input()
 		menu_draw()
+		menu_input()
 		continue
 	if global_state == PLAY_MODE: # ingame
 		game_input()
