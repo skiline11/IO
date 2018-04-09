@@ -1,3 +1,3 @@
 Pytanie moze byc w postaci pliku csv
-Pytanie SEPARATOR Odp_A SEPARTOR Odp_B SEPARATOR Odp_C
+Pytanie SEPARATOR Odp_A SEPARTOR Odp_B SEPARATOR Odp_C SEPARATOR POPRAWNA_ODP
 
