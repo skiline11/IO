@@ -2,11 +2,15 @@ import pygame
 import math
 import time
 import os.path
+import colors
+from gui import Button
 
 
 el_horizontal = 16
 el_vertical = 9
 framerate = 60
+PLAY_MODE = 1
+MENU_MODE = 0
 
 
 def create_map():
@@ -92,7 +96,45 @@ def create_background(screen, width, height, image_knight):
 				pygame.Rect(int(x) * el_size[0] - x_remainder, int(y) * el_size[1] - y_remainder, el_size[0], el_size[1])
 			)
 	return background
-	
+
+
+def play():
+	global global_state
+	global_state = PLAY_MODE
+
+
+def menu_draw():
+	global screen, width, height
+	objects = []
+	button_width = 100
+	button_height = 100
+	horizontal = width / 2 - button_width / 2
+	vertical = height / 2 - button_height / 2
+	screen.fill(colors.Colors.WHITE)
+	objects.append(Button((horizontal, vertical), (button_width, button_height), colors.Colors.BLUE, colors.Colors.RED, play, "PLAY"))
+
+	for obj in objects:
+		obj.render(screen)
+
+	pygame.display.flip()
+
+
+def menu_input():
+	global is_alive, clock
+	for event in pygame.event.get():
+		if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and bool(event.mod & pygame.KMOD_ALT):
+			is_alive = False
+		if event.type == pygame.QUIT:
+			is_alive = False
+		if event.type == pygame.MOUSEBUTTONDOWN:
+			if event.button == 1: # Left click
+				for button in Button.all:
+					if button.is_active:
+						button.pressed()
+						button.is_active = False
+						break
+	clock.tick(120)
+
 
 # obsługuję klawiaturę i poruszam się rycerzem po mapie z uwzględnieniem że nie da się wyjść poza mapę
 def game_input():
@@ -186,7 +228,6 @@ def game_draw():
 
 def start_game():
 	global my_map, image_knight, global_state, knight_pos, map_view, move
-	global_state = 1
 	# my_map = create_background_table()
 	my_map = create_map()
 	image_knight = pygame.image.load(os.path.join("rycerz_clear.png"))
@@ -209,17 +250,17 @@ map_view = [16*el_size[0], 9*el_size[1]]
 knight_pos = [7.5*el_size[0], 3.5*el_size[1]]
 
 is_alive = True
-global_state = 0
+global_state = MENU_MODE
 
 start_game()
 
 while is_alive:
 	dt = clock.tick(framerate)
-	if global_state == 0: #menu
+	if global_state == MENU_MODE: #menu
 		menu_input()
 		menu_draw()
 		continue
-	if global_state == 1: # ingame
+	if global_state == PLAY_MODE: # ingame
 		game_input()
 		game_draw()
 		continue
