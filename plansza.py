@@ -6,6 +6,7 @@ import os.path
 
 el_horizontal = 16
 el_vertical = 9
+framerate = 60
 
 
 def create_map():
@@ -19,7 +20,8 @@ def create_map():
 	my_map = [
 		[
 			{
-				"color": colors["grass"]
+				"color": colors["grass"],
+				"solid": False
 			} for y in range(27)
 		] for x in range(48)
 	]
@@ -32,6 +34,7 @@ def create_map():
 		for x in range(2):
 			for y in range(2):
 				my_map[pos_x + x][pos_y + y]["color"] = colors["monster"]
+				my_map[pos_x + x][pos_y + y]["solid"] = True
 
 	#dodaje kamienie
 	s1 = []
@@ -53,9 +56,12 @@ def create_map():
 	for x in range(48):
 		for y in [0, 26]:
 			my_map[x][y]["color"] = colors["end_of_map"]
+			my_map[x][y]["solid"] = True
+
 	for y in range(27):
 		for x in [0, 47]:
 			my_map[x][y]["color"] = colors["end_of_map"]
+			my_map[x][y]["solid"] = True
 
 	return my_map
 
@@ -90,7 +96,7 @@ def create_background(screen, width, height, image_knight):
 
 # obsługuję klawiaturę i poruszam się rycerzem po mapie z uwzględnieniem że nie da się wyjść poza mapę
 def game_input():
-	move_val = 5
+	move_val = 10
 	global move, knight_pos, height, width, clock, el_size, is_alive, my_map
 	map_movable_area = 0.1
 	event_array = pygame.event.get()
@@ -116,32 +122,57 @@ def game_input():
 					move[1] = -move_val
 				if event.key == pygame.K_DOWN:
 					move[1] = move_val
-	else:
-		clock.tick(120)
-	if game_input.times_pressed > 0:
 
+	real_knight_pos=[0,0]
+	real_knight_pos[0] = knight_pos[0]+map_view[0]
+	real_knight_pos[1] = knight_pos[1]+map_view[1]
+
+	if game_input.times_pressed > 0:
 		# jeśli znajdujemu się wystarczająco daleko od brzegów planszy to nie będziemy przesówać jej widoku
 		# tylko przesuniemy się rycerzem
-		if ((knight_pos[0] + move[0] <= width *(1-map_movable_area) - el_size[0] and
-			knight_pos[0] + move[0] >= width * map_movable_area) or
-			(knight_pos[0] + move[0] <= width * map_movable_area and
-			 map_view[0]==0 and knight_pos[0] + move[0] >= 0) or
-			(knight_pos[0] + move[0] >= width *(1-map_movable_area) - el_size[0] and 
-			 map_view[0]==len(my_map)*el_size[0]-width and knight_pos[0] + move[0] <= width - el_size[0])
-			):
-			knight_pos[0] += move[0]
-		elif len(my_map)*el_size[0]-width >= map_view[0] + move[0] >= 0:
-			map_view[0] += move[0]
+
+		print(real_knight_pos)
+		cur_el_x_front = int((real_knight_pos[0])/el_size[0])
+		cur_el_x_end = int((real_knight_pos[0]+el_size[0]-1)/el_size[0])
+		next_el_y = int((real_knight_pos[1]+el_size[1]+move[1])/el_size[1])
+		prev_el_y = int((real_knight_pos[1]+move[1])/el_size[1])
+
+		cur_el_y_top = int((real_knight_pos[1])/el_size[1])
+		cur_el_y_bottom = int((real_knight_pos[1]+el_size[1]-1)/el_size[1])
+		next_el_x = int((real_knight_pos[0]+el_size[0]+move[0])/el_size[0])
+		prev_el_x = int((real_knight_pos[0]+move[0])/el_size[0])
+
+		if move[0] != 0:
+			if (my_map[next_el_x][cur_el_y_top]["solid"] or my_map[next_el_x][cur_el_y_bottom]["solid"]) and move[0] > 0:
+				move[0] = (next_el_x-1)*el_size[0] - real_knight_pos[0]
+			if (my_map[prev_el_x][cur_el_y_top]["solid"] or my_map[prev_el_x][cur_el_y_bottom]["solid"]) and move[0] < 0:
+				move[0] = (prev_el_x+1)*el_size[0] - real_knight_pos[0]
+
+			if ((knight_pos[0] + move[0] <= width *(1-map_movable_area) - el_size[0] and
+				knight_pos[0] + move[0] >= width * map_movable_area) or
+				(knight_pos[0] + move[0] <= width * map_movable_area and
+				 map_view[0]==0 and knight_pos[0] + move[0] >= 0) or
+				(knight_pos[0] + move[0] >= width *(1-map_movable_area) - el_size[0] and 
+				 map_view[0]==len(my_map)*el_size[0]-width and knight_pos[0] + move[0] <= width - el_size[0])):
+				knight_pos[0] += move[0]
+			elif len(my_map)*el_size[0]-width >= map_view[0] + move[0] >= 0:
+				map_view[0] += move[0]
 			
-		if ((knight_pos[1] + move[1] <= height*(1-map_movable_area) - el_size[1] and 
-			 knight_pos[1] + move[1] >= height*map_movable_area) or
-			(knight_pos[1] + move[1] <= height*map_movable_area and 
-			 map_view[1]==0 and knight_pos[1] + move[1] >= 0) or
-			(knight_pos[1] + move[1] >= height*(1-map_movable_area) - el_size[1] and 
-			 map_view[1]==len(my_map[0])*el_size[1]-height and knight_pos[1] + move[1] <= height - el_size[1])):
-				knight_pos[1] += move[1]
-		elif len(my_map[0])*el_size[1]-height >= map_view[1] + move[1] >= 0:
-			map_view[1] += move[1]
+		if move[1] != 0:
+			if (my_map[cur_el_x_front][next_el_y]["solid"] or my_map[cur_el_x_end][next_el_y]["solid"]) and move[1] > 0:
+				move[1] = (next_el_y-1)*el_size[1] - real_knight_pos[1]
+			if (my_map[cur_el_x_front][prev_el_y]["solid"] or my_map[cur_el_x_end][prev_el_y]["solid"]) and move[1] < 0:
+				move[1] = (prev_el_y+1)*el_size[1] - real_knight_pos[1]
+
+			if ((knight_pos[1] + move[1] <= height*(1-map_movable_area) - el_size[1] and 
+				 knight_pos[1] + move[1] >= height*map_movable_area) or
+				(knight_pos[1] + move[1] <= height*map_movable_area and 
+				 map_view[1]==0 and knight_pos[1] + move[1] >= 0) or
+				(knight_pos[1] + move[1] >= height*(1-map_movable_area) - el_size[1] and 
+				 map_view[1]==len(my_map[0])*el_size[1]-height and knight_pos[1] + move[1] <= height - el_size[1])):
+					knight_pos[1] += move[1]
+			elif len(my_map[0])*el_size[1]-height >= map_view[1] + move[1] >= 0:
+				map_view[1] += move[1]
 		
 
 game_input.times_pressed = 0
@@ -154,11 +185,14 @@ def game_draw():
 	pygame.display.flip()
 
 def start_game():
-	global my_map, image_knight, global_state
+	global my_map, image_knight, global_state, knight_pos, map_view, move
 	global_state = 1
 	# my_map = create_background_table()
 	my_map = create_map()
 	image_knight = pygame.image.load(os.path.join("rycerz_clear.png"))
+	map_view = [50, 50]
+	knight_pos = [200, 200]
+	move = [0, 0]
 
 # 16:9 --> 80px * x
 
@@ -169,7 +203,6 @@ height = 720
 screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 
-move = [0, 0]
 el_size = (width / el_horizontal, height / el_vertical)
 map_view = [16*el_size[0], 9*el_size[1]]
 # knight_pos = [400, 200]
@@ -181,6 +214,7 @@ global_state = 0
 start_game()
 
 while is_alive:
+	dt = clock.tick(framerate)
 	if global_state == 0: #menu
 		menu_input()
 		menu_draw()
