@@ -101,7 +101,9 @@ def init_menu():
 	horizontal = width / 2 - button_width / 2 - 77
 	vertical = height / 2 - button_height / 2 + 250
 	menu_obj.append(Button((horizontal, vertical), (button_width, button_height), colors.Colors.BLACK, colors.Colors.RED, start_game, "PLAY"))
-	image_menu = pygame.image.load(os.path.join("menu.jpg"))
+	image_menu = pygame.image.load(os.path.join("img/menu.jpg"))
+	pygame.mixer.music.load('sounds/soundtrack.mp3')
+	pygame.mixer.music.play(-1)
 
 def menu_draw():
 	global screen, image_menu
@@ -135,6 +137,7 @@ def menu_input():
 def game_input():
 	move_val = 10
 	global move, knight_pos, height, width, clock, el_size, is_alive, my_map, global_state
+	global exit_enter_sound_effect, sound_effect_delay
 	map_movable_area_x = 1.0/16
 	map_movable_area_y = 1.0/9
 	event_array = pygame.event.get()
@@ -152,6 +155,10 @@ def game_input():
 					move[1] = 0
 			if event.type == pygame.KEYDOWN:
 				game_input.times_pressed += 1
+				if event.key == pygame.K_ESCAPE:
+					exit_enter_sound_effect.play()
+					pygame.time.wait(sound_effect_delay)
+					global_state = MENU_MODE
 				if event.key == pygame.K_RIGHT:
 					move[0] = move_val
 				if event.key == pygame.K_LEFT:
@@ -160,8 +167,6 @@ def game_input():
 					move[1] = -move_val
 				if event.key == pygame.K_DOWN:
 					move[1] = move_val
-				if event.key == pygame.K_ESCAPE:
-					global_state = MENU_MODE
 
 	real_knight_pos = [0, 0]
 	real_knight_pos[0] = knight_pos[0] + map_view[0]
@@ -264,20 +269,23 @@ class Monster(object):
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y
-		self.image = [pygame.image.load(os.path.join("monster/monster_" + str(id) + ".png")) for id in range(1, 3)]
+		self.image = [pygame.image.load(os.path.join("img/monster/monster_" + str(id) + ".png")) for id in range(1, 3)]
 
 
 class Tree(object):
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y
-		self.image = [pygame.image.load(os.path.join("tree/v2_tree-" + str(id) + ".png")) for id in range(8)]
+		self.image = [pygame.image.load(os.path.join("img/tree/v2_tree-" + str(id) + ".png")) for id in range(8)]
 
 
 def start_game():
 	global my_map, image_knight, global_state, knight_pos, monsters, map_view, move
+	global exit_enter_sound_effect, sound_effect_delay
+	exit_enter_sound_effect.play()
+	pygame.time.wait(sound_effect_delay)
 	my_map = create_map()
-	image_knight = pygame.image.load(os.path.join("rycerz_clear.png"))
+	image_knight = pygame.image.load(os.path.join("img/rycerz_clear.png"))
 	map_view = [16*el_size[0], 9*el_size[1]]
 	knight_pos = [7.5*el_size[0], 3.5*el_size[1]]
 	move = [0, 0]
@@ -306,7 +314,8 @@ trees_positions = t1
 trees = [Tree(pos_x, pos_y) for pos_x, pos_y in trees_positions]
 tree_view = 0.0
 
-
+exit_enter_sound_effect = pygame.mixer.Sound("sounds/enter_exit_sound.wav")
+sound_effect_delay = 400
 
 is_alive = True
 global_state = MENU_MODE
