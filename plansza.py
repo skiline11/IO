@@ -105,19 +105,22 @@ def init_menu():
 	pygame.mixer.music.load('sounds/soundtrack.mp3')
 	pygame.mixer.music.play(-1)
 
-def menu_draw():
-	global screen, image_menu
 
-	screen.fill(colors.Colors.WHITE)
+def menu_draw():
+	global screen, image_menu, go_to_menu_mode
+
 	screen.blit(image_menu, (0, 0))
 	for obj in menu_obj:
 		obj.render(screen)
+
+	if go_to_menu_mode == True:
+		go_to_menu_mode = False
 
 	pygame.display.flip()
 
 
 def menu_input():
-	global is_alive, clock
+	global is_alive, clock, go_to_play_mode
 	for event in pygame.event.get():
 		if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and bool(event.mod & pygame.KMOD_ALT):
 			is_alive = False
@@ -128,6 +131,7 @@ def menu_input():
 				for button in Button.all:
 					if button.is_active:
 						button.pressed()
+						go_to_play_mode = True
 						button.is_active = False
 						break
 	clock.tick(framerate)
@@ -137,7 +141,8 @@ def menu_input():
 def game_input():
 	move_val = 10
 	global move, knight_pos, height, width, clock, el_size, is_alive, my_map, global_state
-	global exit_enter_sound_effect, sound_effect_delay
+	global exit_enter_sound_effect, sound_effect_delay, go_to_menu_mode
+	global screen
 	map_movable_area_x = 1.0/16
 	map_movable_area_y = 1.0/9
 	event_array = pygame.event.get()
@@ -158,7 +163,13 @@ def game_input():
 				if event.key == pygame.K_ESCAPE:
 					exit_enter_sound_effect.play()
 					pygame.time.wait(sound_effect_delay)
+					for y in range(int(height/20)):
+						screen.blit(image_menu, (0, y*20 - height))
+						pygame.display.flip()
+						pygame.time.wait(1)
+
 					global_state = MENU_MODE
+					go_to_menu_mode = True
 				if event.key == pygame.K_RIGHT:
 					move[0] = move_val
 				if event.key == pygame.K_LEFT:
@@ -173,10 +184,10 @@ def game_input():
 	real_knight_pos[1] = knight_pos[1] + map_view[1]
 
 	if game_input.times_pressed > 0:
-		print("tutaj")
+		# print("tutaj")
 		# jeśli znajdujemu się wystarczająco daleko od brzegów planszy to nie będziemy przesówać jej widoku
 		# tylko przesuniemy się rycerzem
-		print(real_knight_pos)
+		# print(real_knight_pos)
 		cur_el_x_front = int((real_knight_pos[0]) / el_size[0])
 		cur_el_x_end = int((real_knight_pos[0] + el_size[0] - 1) / el_size[0])
 		next_el_y = int((real_knight_pos[1] + el_size[1] + move[1]) / el_size[1])
@@ -188,7 +199,7 @@ def game_input():
 		prev_el_x = int((real_knight_pos[0] + move[0]) / el_size[0])
 
 		if move[0] != 0:
-			print("poziomo")
+			# print("poziomo")
 			if (my_map[next_el_x][cur_el_y_top]["solid"] or my_map[next_el_x][cur_el_y_bottom]["solid"]) and move[
 				0] > 0:
 				move[0] = (next_el_x - 1) * el_size[0] - real_knight_pos[0]
@@ -208,7 +219,7 @@ def game_input():
 				map_view[0] += move[0]
 
 		if move[1] != 0:
-			print("pionowo")
+			# print("pionowo")
 			if (my_map[cur_el_x_front][next_el_y]["solid"] or my_map[cur_el_x_end][next_el_y]["solid"]) and move[1] > 0:
 				move[1] = (next_el_y - 1) * el_size[1] - real_knight_pos[1]
 			if (my_map[cur_el_x_front][prev_el_y]["solid"] or my_map[cur_el_x_end][prev_el_y]["solid"]) and move[1] < 0:
@@ -224,13 +235,13 @@ def game_input():
 				knight_pos[1] += move[1]
 			elif len(my_map[0]) * el_size[1] - height >= map_view[1] + move[1] >= 0:
 				map_view[1] += move[1]
-		
+
 
 game_input.times_pressed = 0
 
 
 def draw_monsters():
-	global monsters, monster_view, map_view
+	global monsters, monster_view, map_view, screen
 	for monster in monsters:
 		if map_view[0] - (2 * el_size[0]) <= monster.x * el_size[0] <= map_view[0] + width and map_view[1] - (2 * el_size[1]) <= monster.y * el_size[1] <= map_view[1] + height:
 			pos = (monster.x * el_size[0] - map_view[0], monster.y * el_size[1] - map_view[1])
@@ -240,29 +251,48 @@ def draw_monsters():
 def draw_trees():
 	global trees, tree_view, map_view, monsters, screen, monsters
 	for tree in trees:
-		print("rys drzewo")
+		# print("rys drzewo")
 		if map_view[0] - (3 * el_size[0]) <= tree.x * el_size[0] <= map_view[0] + width and map_view[1] - (4 * el_size[1]) <= tree.y * el_size[1] <= map_view[1] + height:
-			print("rysujemy --------------------")
+			# print("rysujemy --------------------")
 			pos = (tree.x * el_size[0] - map_view[0], tree.y * el_size[1] - map_view[1])
 			screen.blit(tree.image[int(tree_view)], pos)
-			print("Po narysowaniu  na pos = " + str(tree.x) + ", " + str(el_size[0]) + ", " + str(map_view[0]) + "!!!!!")
-			print(str)
+			# print("Po narysowaniu  na pos = " + str(tree.x) + ", " + str(el_size[0]) + ", " + str(map_view[0]) + "!!!!!")
 
 
 def game_draw():
-	global screen, background, knight_pos, screen, width, height, image_knight, monster_view, tree_view
+	global screen, background, knight_pos, width, height, image_knight, monster_view, tree_view
+	global go_to_play_mode, go_to_menu_mode
 	background = create_background(screen, width, height, image_knight)
 	screen.blit(background, (0, 0))
 	screen.blit(image_knight, (knight_pos[0], knight_pos[1]))
 	draw_monsters()
 	draw_trees()
+
 	monster_view += 0.125
 	tree_view += 0.25
 	if monster_view >= 2.0:
 		monster_view = 0
 	if tree_view >= 8.0:
 		tree_view = 0
-	pygame.display.flip()
+
+	# print("go to play mode = " + str(go_to_play_mode))
+	if go_to_play_mode == True:
+		# print("................z true")
+		go_to_play_mode = False
+
+		# wyświetlam animację znikania menu
+		for y in range(int(height / 20)):
+			screen.blit(background, (0, 0))
+			screen.blit(image_knight, (knight_pos[0], knight_pos[1]))
+			draw_monsters()
+			draw_trees()
+
+			screen.blit(image_menu, (0, y * (-20.0)))
+			pygame.display.flip()
+			pygame.time.wait(1)
+	elif go_to_menu_mode == False:
+		# print("................z false")
+		pygame.display.flip()
 
 
 class Monster(object):
@@ -281,7 +311,7 @@ class Tree(object):
 
 def start_game():
 	global my_map, image_knight, global_state, knight_pos, monsters, map_view, move
-	global exit_enter_sound_effect, sound_effect_delay
+	global exit_enter_sound_effect, sound_effect_delay, go_to_play_mode
 	exit_enter_sound_effect.play()
 	pygame.time.wait(sound_effect_delay)
 	my_map = create_map()
@@ -290,6 +320,7 @@ def start_game():
 	knight_pos = [7.5*el_size[0], 3.5*el_size[1]]
 	move = [0, 0]
 	global_state = PLAY_MODE
+	go_to_play_mode = True
 
 # 16:9 --> 80px * x
 
@@ -319,6 +350,10 @@ sound_effect_delay = 400
 
 is_alive = True
 global_state = MENU_MODE
+
+#potrzebuję tych zmiennych do wyświetlania animacji pojawiania się i znikania menu
+go_to_play_mode = False
+go_to_menu_mode = False
 
 init_menu()
 
