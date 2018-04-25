@@ -4,23 +4,23 @@ from colors import Colors
 
 class Monster(object):
 	def __init__(self, x, y):
+		self.type = 'Monster'
 		self.x = x
 		self.y = y
-		self.image = [pygame.image.load(os.path.join("img/monster/monster_" + str(id) + ".png")) for id in range(1, 3)]
 
 
 class Tree(object):
 	def __init__(self, x, y):
+		self.type = 'Tree'
 		self.x = x
 		self.y = y
-		self.image = [pygame.image.load(os.path.join("img/tree/v2_tree-" + str(id) + ".png")) for id in range(8)]
 
 
 class Knight(object):
 	def __init__(self, x, y):
+		self.type = 'Knight'
 		self.x = x
 		self.y = y
-		self.image = pygame.image.load(os.path.join("img/knight/rycerz_clear.png"))
 
 	def get_pos(self):
 		pos = (self.x, self.y)
@@ -28,6 +28,7 @@ class Knight(object):
 
 class Map(object):
 	def __init__(self):
+		print('test')
 		self.map = [
 			[
 				{
