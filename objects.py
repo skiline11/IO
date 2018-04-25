@@ -15,6 +15,10 @@ class Tree(object):
 		self.x = x
 		self.y = y
 
+	def collide(self, x, y, x_size, y_size, move):
+		print(x, y, x_size, y_size, move)
+		return move
+
 
 class Knight(object):
 	def __init__(self, x, y):

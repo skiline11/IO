@@ -17,6 +17,7 @@ MENU_MODE = 0
 MENU_LOAD_MODE = 2
 menu_obj = []
 menu_savegame_buttons = []
+collidable_objects = []
 
 sprites = {}
 sprites['Monster'] = [pygame.image.load(os.path.join("img/monster/monster_" + str(id) + ".png")) for id in range(1, 3)]
@@ -232,6 +233,11 @@ def game_input():
 		next_el_x = int((real_knight_pos[0] + el_size[0] + move[0]) / el_size[0])
 		prev_el_x = int((real_knight_pos[0] + move[0]) / el_size[0])
 
+		if move[0] != 0 or move[1] != 0:
+			for col in collidable_objects:
+				move = col.collide(real_knight_pos[0], real_knight_pos[1], el_size[0], el_size[1], move)
+
+
 		if move[0] != 0:
 			# print("poziomo")
 			if (my_map.map[next_el_x][cur_el_y_top]["solid"] or my_map.map[next_el_x][cur_el_y_bottom]["solid"]) and move[
@@ -331,12 +337,12 @@ def game_draw():
 
 
 def start_game():
-	global my_map, global_state, monsters, map_view, move, width, height
+	global my_map, global_state, monsters, map_view, move, width, height, collidable_objects
 	global exit_enter_sound_effect, sound_effect_delay, go_to_play_mode
 	exit_enter_sound_effect.play()
 	pygame.time.wait(sound_effect_delay)
 	my_map = Map()
-
+	collidable_objects = my_map.trees
 	map_view = [16*el_size[0], 9*el_size[1]]
 	move = [0, 0]
 	knight.x = width/2
