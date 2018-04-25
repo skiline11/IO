@@ -102,10 +102,10 @@ def init_menu():
 	global screen, width, height, image_menu
 	button_width = 200
 	button_height = 100
-	horizontal = width / 2 - button_width / 2 - 77
+	horizontal = width / 2 - (button_width*2+50) / 2 - 100
 	vertical = height / 2 - button_height / 2 + 250
 	menu_obj.append(Button((horizontal, vertical), (button_width, button_height), colors.Colors.BLACK, colors.Colors.RED, start_game, "PLAY"))
-	menu_obj.append(Button((horizontal+500, vertical), (button_width, button_height), colors.Colors.BLACK, colors.Colors.RED, go_to_load_menu, "LOAD"))
+	menu_obj.append(Button((horizontal+300, vertical), (button_width, button_height), colors.Colors.BLACK, colors.Colors.RED, go_to_load_menu, "LOAD"))
 	image_menu = pygame.image.load(os.path.join("img/menu.jpg"))
 	pygame.mixer.music.load('sounds/soundtrack.mp3')
 	pygame.mixer.music.play(-1)
@@ -420,7 +420,6 @@ go_to_play_mode = False
 go_to_menu_mode = False
 
 init_menu()
-global_state = MENU_LOAD_MODE
 while is_alive:
 	dt = clock.tick(framerate)
 	if global_state == 0: #menu
