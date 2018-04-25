@@ -21,7 +21,6 @@ class Font:
 
 
 class Button:
-	all = []
 
 	def __init__(self, pos, size, color, hicol, func, text="EMPTY", font=Font.Default):
 		self.text = text
@@ -43,8 +42,6 @@ class Button:
 		self.active = pygame.Surface((self.width, self.height), pygame.HWSURFACE | pygame.SRCALPHA)
 		self.active.fill(hicol)
 		self.active.blit(rendered_txt, (self.width / 2 - text_rect[2] / 2, self.height / 2 - text_rect[3] / 2))
-
-		Button.all.append(self)
 
 	def render(self, to, pos=(0, 0)):
 		if mouse_over((self.left + pos[0], self.top + pos[1]), (self.width, self.height)):

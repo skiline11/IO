@@ -2,16 +2,20 @@ import pygame
 import math
 import time
 import os.path
+import os
 import colors
 from gui import Button
+import copy
 
 
 el_horizontal = 16
 el_vertical = 9
 framerate = 60
+MENU_LOAD_MODE = 2
 PLAY_MODE = 1
 MENU_MODE = 0
 menu_obj = []
+menu_savegame_buttons = []
 
 
 def create_map():
@@ -101,6 +105,7 @@ def init_menu():
 	horizontal = width / 2 - button_width / 2 - 77
 	vertical = height / 2 - button_height / 2 + 250
 	menu_obj.append(Button((horizontal, vertical), (button_width, button_height), colors.Colors.BLACK, colors.Colors.RED, start_game, "PLAY"))
+	menu_obj.append(Button((horizontal+500, vertical), (button_width, button_height), colors.Colors.BLACK, colors.Colors.RED, go_to_load_menu, "LOAD"))
 	image_menu = pygame.image.load(os.path.join("img/menu.jpg"))
 	pygame.mixer.music.load('sounds/soundtrack.mp3')
 	pygame.mixer.music.play(-1)
@@ -120,7 +125,7 @@ def menu_draw():
 
 
 def menu_input():
-	global is_alive, clock, go_to_play_mode
+	global is_alive, clock, go_to_play_mode, menu_buttons
 	for event in pygame.event.get():
 		if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and bool(event.mod & pygame.KMOD_ALT):
 			is_alive = False
@@ -128,7 +133,7 @@ def menu_input():
 			is_alive = False
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			if event.button == 1: # Left click
-				for button in Button.all:
+				for button in menu_obj:
 					if button.is_active:
 						button.pressed()
 						go_to_play_mode = True
@@ -136,6 +141,66 @@ def menu_input():
 						break
 	clock.tick(framerate)
 
+def menu_load_draw():
+	global screen, image_menu_load, menu_savegame_buttons, go_to_menu_mode
+
+	screen.blit(image_menu, (0, 0))
+	for obj in menu_savegame_buttons:
+		obj.render(screen)
+	if go_to_menu_mode == False:
+		pygame.display.flip()
+
+def load_game_file(f):
+	print('TODO TODO TODO TODO TODO')
+	print(f)
+
+def save_game_file(f):
+	print(f)
+
+def go_to_menu():
+	global go_to_menu_mode, global_state
+	exit_enter_sound_effect.play()
+	pygame.time.wait(sound_effect_delay)
+	global_state = MENU_MODE
+
+def go_to_load_menu():
+	global global_state
+	exit_enter_sound_effect.play()
+	pygame.time.wait(sound_effect_delay)
+	global_state = MENU_LOAD_MODE
+
+def menu_load_input():
+	global is_alive, clock, go_to_menu_mode, go_to_play_mode, menu_savegame_buttons, global_state
+
+	if menu_load_input.how_many_frames_since_last_refresh > 30:
+		vert = 50
+		menu_savegame_buttons = [Button((25, vert), (500, 30), colors.Colors.BLACK, colors.Colors.RED, go_to_menu, "Menu główne")]
+		vert += 40
+		for file in os.listdir("./savedgames"):
+			if file.endswith(".txt"):
+				menu_savegame_buttons.append(Button((25, vert), (500, 30), colors.Colors.BLACK, 
+											colors.Colors.RED, lambda b_f=file: load_game_file(b_f), os.path.splitext(file)[0]))
+				vert += 40
+		menu_load_input.how_many_frames_since_last_refresh = 0
+	menu_load_input.how_many_frames_since_last_refresh += 1
+	
+	for event in pygame.event.get():
+		if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and bool(event.mod & pygame.KMOD_ALT):
+			is_alive = False
+		if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+			go_to_menu()
+		if event.type == pygame.QUIT:
+			is_alive = False
+		if event.type == pygame.MOUSEBUTTONDOWN:
+			if event.button == 1: # Left click
+				for button in menu_savegame_buttons:
+					if button.is_active:
+						button.pressed()
+						go_to_play_mode = True
+						button.is_active = False
+						break
+	clock.tick(framerate)
+menu_load_input.how_many_frames_since_last_refresh = 60
 
 # obsługuję klawiaturę i poruszam się rycerzem po mapie z uwzględnieniem że nie da się wyjść poza mapę
 def game_input():
@@ -167,7 +232,6 @@ def game_input():
 						screen.blit(image_menu, (0, y*20 - height))
 						pygame.display.flip()
 						pygame.time.wait(1)
-
 					global_state = MENU_MODE
 					go_to_menu_mode = True
 				if event.key == pygame.K_RIGHT:
@@ -356,7 +420,7 @@ go_to_play_mode = False
 go_to_menu_mode = False
 
 init_menu()
-
+global_state = MENU_LOAD_MODE
 while is_alive:
 	dt = clock.tick(framerate)
 	if global_state == 0: #menu
@@ -366,4 +430,8 @@ while is_alive:
 	if global_state == 1: # ingame
 		game_input()
 		game_draw()
+		continue
+	if global_state == 2: # load screen
+		menu_load_input()
+		menu_load_draw()
 		continue
