@@ -5,7 +5,7 @@ import os.path
 import os
 import copy
 from colors import Colors
-from gui import Button
+from gui import Button, draw_text
 from objects import Monster, Tree, Knight, Map
 import pickle
 
@@ -202,7 +202,6 @@ def game_input():
 						screen.blit(image_menu, (0, y*20 - height))
 						pygame.display.flip()
 						pygame.time.wait(1)
-
 					global_state = MENU_MODE
 					go_to_menu_mode = True
 				if event.key == pygame.K_RIGHT:
@@ -308,6 +307,10 @@ def game_draw():
 	screen.blit(sprites[knight.type][0], (knight.x, knight.y))
 	draw_monsters()
 	draw_trees()
+	draw_text(screen, 2, 0, 'Remaining HP: ' + str(knight.life) + '/100')
+	if knight.life < 1:
+		print('The player died!')
+		go_to_menu()
 
 	monster_view += 0.125
 	tree_view += 0.25

@@ -20,6 +20,11 @@ class Font:
 	Scanner = pygame.font.SysFont("Verdana", 30)
 
 
+def draw_text(screen, x, y, text):
+	rendered_txt = Font.Default.render(text, True, colors.Colors.WHITE)
+	text_rect = rendered_txt.get_rect()
+	screen.blit(rendered_txt, (x, y))
+
 class Button:
 
 	def __init__(self, pos, size, color, hicol, func, text="EMPTY", font=Font.Default):

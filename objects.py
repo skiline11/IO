@@ -25,6 +25,7 @@ class Knight(object):
 		self.type = 'Knight'
 		self.x = x
 		self.y = y
+		self.life = 10
 
 	def get_pos(self):
 		pos = (self.x, self.y)
