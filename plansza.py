@@ -3,78 +3,23 @@ import math
 import time
 import os.path
 import os
-import colors
-from gui import Button
 import copy
+from colors import Colors
+from gui import Button
+from objects import Monster, Tree, Knight, Map
 
 
 el_horizontal = 16
 el_vertical = 9
 framerate = 60
-MENU_LOAD_MODE = 2
 PLAY_MODE = 1
 MENU_MODE = 0
+MENU_LOAD_MODE = 2
 menu_obj = []
 menu_savegame_buttons = []
 
-
-def create_map():
-	global enemies_positions
-
-	color_grass = (100, 204, 0)
-	color_stone = (156, 156, 156)
-	color_monster = (255, 0, 0)
-	color_end_of_map = (0, 0, 0)
-	colors = {"grass": color_grass, "stone": color_stone, "monster": color_monster, "end_of_map": color_end_of_map}
-
-	# mapa pełna kamieni
-	my_map = [
-		[
-			{
-				"color": colors["grass"],
-				"solid": False
-			} for y in range(27)
-		] for x in range(48)
-	]
-
-	# dodaje przeciwnikow
-	for pos_x, pos_y in enemies_positions:
-		for x in range(2):
-			for y in range(2):
-				my_map[pos_x + x][pos_y + y]["color"] = colors["monster"]
-				my_map[pos_x + x][pos_y + y]["solid"] = True
-
-
-	#dodaje kamienie
-	# pionowe
-	for y in range(4, 23): # bez 24
-		for x in [6, 23, 40]:
-			my_map[x][y]["color"] = colors["stone"]
-			my_map[x + 1][y]["color"] = colors["stone"]
-	#poziome
-	for x in range(6, 42): # bez 42
-		my_map[x][12]["color"] = colors["stone"]
-		my_map[x][13]["color"] = colors["stone"]
-	for x in range(19, 29):
-		for y in [3, 22]:
-			my_map[x][y]["color"] = colors["stone"]
-			my_map[x][y + 1]["color"] = colors["stone"]
-
-	#koniec planszy
-	for x in range(48):
-		for y in [0, 26]:
-			my_map[x][y]["color"] = colors["end_of_map"]
-			my_map[x][y]["solid"] = True
-	for y in range(27):
-		for x in [0, 47]:
-			my_map[x][y]["color"] = colors["end_of_map"]
-			my_map[x][y]["solid"] = True
-
-	return my_map
-
-
 # tworzę okienko i rysuję na nim mapę
-def create_background(screen, width, height, image_knight):
+def create_background(screen, width, height):
 	global el_horizontal, el_vertical
 	new_background = pygame.Surface((width, height))
 
@@ -85,11 +30,11 @@ def create_background(screen, width, height, image_knight):
 
 	for x in range(el_horizontal+1):
 		for y in range(el_vertical+1):
-			if x+x_offset >= len(my_map):
+			if x+x_offset >= len(my_map.map):
 				continue
-			if y+y_offset >= len(my_map[x+x_offset]):
+			if y+y_offset >= len(my_map.map[x+x_offset]):
 				continue
-			el = my_map[x+x_offset][y+y_offset]
+			el = my_map.map[x+x_offset][y+y_offset]
 			pygame.draw.rect(
 				new_background,
 				el["color"],
@@ -104,8 +49,8 @@ def init_menu():
 	button_height = 100
 	horizontal = width / 2 - (button_width*2+50) / 2 - 100
 	vertical = height / 2 - button_height / 2 + 250
-	menu_obj.append(Button((horizontal, vertical), (button_width, button_height), colors.Colors.BLACK, colors.Colors.RED, start_game, "PLAY"))
-	menu_obj.append(Button((horizontal+300, vertical), (button_width, button_height), colors.Colors.BLACK, colors.Colors.RED, go_to_load_menu, "LOAD"))
+	menu_obj.append(Button((horizontal, vertical), (button_width, button_height), Colors.BLACK, Colors.RED, start_game, "PLAY"))
+	menu_obj.append(Button((horizontal+300, vertical), (button_width, button_height), Colors.BLACK, Colors.RED, go_to_load_menu, "LOAD"))
 	image_menu = pygame.image.load(os.path.join("img/menu.jpg"))
 	pygame.mixer.music.load('sounds/soundtrack.mp3')
 	pygame.mixer.music.play(-1)
@@ -125,7 +70,7 @@ def menu_draw():
 
 
 def menu_input():
-	global is_alive, clock, go_to_play_mode, menu_buttons
+	global is_alive, clock, go_to_play_mode, menu_buttons, menu_obj
 	for event in pygame.event.get():
 		if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and bool(event.mod & pygame.KMOD_ALT):
 			is_alive = False
@@ -140,6 +85,7 @@ def menu_input():
 						button.is_active = False
 						break
 	clock.tick(framerate)
+
 
 def menu_load_draw():
 	global screen, image_menu_load, menu_savegame_buttons, go_to_menu_mode
@@ -174,16 +120,16 @@ def menu_load_input():
 
 	if menu_load_input.how_many_frames_since_last_refresh > 30:
 		vert = 50
-		menu_savegame_buttons = [Button((25, vert), (500, 30), colors.Colors.BLACK, colors.Colors.RED, go_to_menu, "Menu główne")]
+		menu_savegame_buttons = [Button((25, vert), (500, 30), Colors.BLACK, Colors.RED, go_to_menu, "Menu główne")]
 		vert += 40
 		for file in os.listdir("./savedgames"):
 			if file.endswith(".txt"):
-				menu_savegame_buttons.append(Button((25, vert), (500, 30), colors.Colors.BLACK, 
-											colors.Colors.RED, lambda b_f=file: load_game_file(b_f), os.path.splitext(file)[0]))
+				menu_savegame_buttons.append(Button((25, vert), (500, 30), Colors.BLACK,
+											Colors.RED, lambda b_f=file: load_game_file(b_f), os.path.splitext(file)[0]))
 				vert += 40
 		menu_load_input.how_many_frames_since_last_refresh = 0
 	menu_load_input.how_many_frames_since_last_refresh += 1
-	
+
 	for event in pygame.event.get():
 		if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and bool(event.mod & pygame.KMOD_ALT):
 			is_alive = False
@@ -202,10 +148,12 @@ def menu_load_input():
 	clock.tick(framerate)
 menu_load_input.how_many_frames_since_last_refresh = 60
 
+
 # obsługuję klawiaturę i poruszam się rycerzem po mapie z uwzględnieniem że nie da się wyjść poza mapę
 def game_input():
 	move_val = 10
-	global move, knight_pos, height, width, clock, el_size, is_alive, my_map, global_state
+	global knight
+	global move, height, width, clock, el_size, is_alive, my_map, global_state
 	global exit_enter_sound_effect, sound_effect_delay, go_to_menu_mode
 	global screen
 	map_movable_area_x = 1.0/16
@@ -232,6 +180,7 @@ def game_input():
 						screen.blit(image_menu, (0, y*20 - height))
 						pygame.display.flip()
 						pygame.time.wait(1)
+
 					global_state = MENU_MODE
 					go_to_menu_mode = True
 				if event.key == pygame.K_RIGHT:
@@ -244,8 +193,8 @@ def game_input():
 					move[1] = move_val
 
 	real_knight_pos = [0, 0]
-	real_knight_pos[0] = knight_pos[0] + map_view[0]
-	real_knight_pos[1] = knight_pos[1] + map_view[1]
+	real_knight_pos[0] = knight.x + map_view[0]
+	real_knight_pos[1] = knight.y + map_view[1]
 
 	if game_input.times_pressed > 0:
 		# print("tutaj")
@@ -264,40 +213,40 @@ def game_input():
 
 		if move[0] != 0:
 			# print("poziomo")
-			if (my_map[next_el_x][cur_el_y_top]["solid"] or my_map[next_el_x][cur_el_y_bottom]["solid"]) and move[
+			if (my_map.map[next_el_x][cur_el_y_top]["solid"] or my_map.map[next_el_x][cur_el_y_bottom]["solid"]) and move[
 				0] > 0:
 				move[0] = (next_el_x - 1) * el_size[0] - real_knight_pos[0]
-			if (my_map[prev_el_x][cur_el_y_top]["solid"] or my_map[prev_el_x][cur_el_y_bottom]["solid"]) and move[
+			if (my_map.map[prev_el_x][cur_el_y_top]["solid"] or my_map.map[prev_el_x][cur_el_y_bottom]["solid"]) and move[
 				0] < 0:
 				move[0] = (prev_el_x + 1) * el_size[0] - real_knight_pos[0]
 
-			if ((knight_pos[0] + move[0] <= width * (1 - map_movable_area_x) - el_size[0] and
-							 knight_pos[0] + move[0] >= width * map_movable_area_x) or
-					(knight_pos[0] + move[0] <= width * map_movable_area_x and
-							 map_view[0] == 0 and knight_pos[0] + move[0] >= 0) or
-					(knight_pos[0] + move[0] >= width * (1 - map_movable_area_x) - el_size[0] and
-							 map_view[0] == len(my_map) * el_size[0] - width and knight_pos[0] + move[0] <= width -
+			if ((knight.x + move[0] <= width * (1 - map_movable_area_x) - el_size[0] and
+							 knight.x + move[0] >= width * map_movable_area_x) or
+					(knight.x + move[0] <= width * map_movable_area_x and
+							 map_view[0] == 0 and knight.x + move[0] >= 0) or
+					(knight.x + move[0] >= width * (1 - map_movable_area_x) - el_size[0] and
+							 map_view[0] == len(my_map.map) * el_size[0] - width and knight.x + move[0] <= width -
 						el_size[0])):
-				knight_pos[0] += move[0]
-			elif len(my_map) * el_size[0] - width >= map_view[0] + move[0] >= 0:
+				knight.x += move[0]
+			elif len(my_map.map) * el_size[0] - width >= map_view[0] + move[0] >= 0:
 				map_view[0] += move[0]
 
 		if move[1] != 0:
 			# print("pionowo")
-			if (my_map[cur_el_x_front][next_el_y]["solid"] or my_map[cur_el_x_end][next_el_y]["solid"]) and move[1] > 0:
+			if (my_map.map[cur_el_x_front][next_el_y]["solid"] or my_map.map[cur_el_x_end][next_el_y]["solid"]) and move[1] > 0:
 				move[1] = (next_el_y - 1) * el_size[1] - real_knight_pos[1]
-			if (my_map[cur_el_x_front][prev_el_y]["solid"] or my_map[cur_el_x_end][prev_el_y]["solid"]) and move[1] < 0:
+			if (my_map.map[cur_el_x_front][prev_el_y]["solid"] or my_map.map[cur_el_x_end][prev_el_y]["solid"]) and move[1] < 0:
 				move[1] = (prev_el_y + 1) * el_size[1] - real_knight_pos[1]
 
-			if ((knight_pos[1] + move[1] <= height * (1 - map_movable_area_y) - el_size[1] and
-							 knight_pos[1] + move[1] >= height * map_movable_area_y) or
-					(knight_pos[1] + move[1] <= height * map_movable_area_y and
+			if ((knight.y + move[1] <= height * (1 - map_movable_area_y) - el_size[1] and
+							 knight.y + move[1] >= height * map_movable_area_y) or
+					(knight.y + move[1] <= height * map_movable_area_y and
 							 map_view[1] == 0 and knight_pos[1] + move[1] >= 0) or
-					(knight_pos[1] + move[1] >= height * (1 - map_movable_area_y) - el_size[1] and
-							 map_view[1] == len(my_map[0]) * el_size[1] - height and knight_pos[1] + move[1] <= height -
+					(knight.y + move[1] >= height * (1 - map_movable_area_y) - el_size[1] and
+							 map_view[1] == len(my_map.map[0]) * el_size[1] - height and knight.y + move[1] <= height -
 						el_size[1])):
-				knight_pos[1] += move[1]
-			elif len(my_map[0]) * el_size[1] - height >= map_view[1] + move[1] >= 0:
+				knight.y += move[1]
+			elif len(my_map.map[0]) * el_size[1] - height >= map_view[1] + move[1] >= 0:
 				map_view[1] += move[1]
 
 
@@ -305,16 +254,16 @@ game_input.times_pressed = 0
 
 
 def draw_monsters():
-	global monsters, monster_view, map_view, screen
-	for monster in monsters:
+	global my_map, monster_view, map_view, screen
+	for monster in my_map.monsters:
 		if map_view[0] - (2 * el_size[0]) <= monster.x * el_size[0] <= map_view[0] + width and map_view[1] - (2 * el_size[1]) <= monster.y * el_size[1] <= map_view[1] + height:
 			pos = (monster.x * el_size[0] - map_view[0], monster.y * el_size[1] - map_view[1])
 			screen.blit(monster.image[int(monster_view)], pos)
 
 
 def draw_trees():
-	global trees, tree_view, map_view, monsters, screen, monsters
-	for tree in trees:
+	global my_map, tree_view, map_view, monsters, screen, monsters
+	for tree in my_map.trees:
 		# print("rys drzewo")
 		if map_view[0] - (3 * el_size[0]) <= tree.x * el_size[0] <= map_view[0] + width and map_view[1] - (4 * el_size[1]) <= tree.y * el_size[1] <= map_view[1] + height:
 			# print("rysujemy --------------------")
@@ -324,11 +273,12 @@ def draw_trees():
 
 
 def game_draw():
-	global screen, background, knight_pos, width, height, image_knight, monster_view, tree_view
+	global knight
+	global screen, background, width, height, monster_view, tree_view
 	global go_to_play_mode, go_to_menu_mode
-	background = create_background(screen, width, height, image_knight)
+	background = create_background(screen, width, height)
 	screen.blit(background, (0, 0))
-	screen.blit(image_knight, (knight_pos[0], knight_pos[1]))
+	screen.blit(knight.image, (knight.x, knight.y))
 	draw_monsters()
 	draw_trees()
 
@@ -347,7 +297,7 @@ def game_draw():
 		# wyświetlam animację znikania menu
 		for y in range(int(height / 20)):
 			screen.blit(background, (0, 0))
-			screen.blit(image_knight, (knight_pos[0], knight_pos[1]))
+			screen.blit(knight.image, (knight.x, knight.y))
 			draw_monsters()
 			draw_trees()
 
@@ -359,29 +309,14 @@ def game_draw():
 		pygame.display.flip()
 
 
-class Monster(object):
-	def __init__(self, x, y):
-		self.x = x
-		self.y = y
-		self.image = [pygame.image.load(os.path.join("img/monster/monster_" + str(id) + ".png")) for id in range(1, 3)]
-
-
-class Tree(object):
-	def __init__(self, x, y):
-		self.x = x
-		self.y = y
-		self.image = [pygame.image.load(os.path.join("img/tree/v2_tree-" + str(id) + ".png")) for id in range(8)]
-
-
 def start_game():
-	global my_map, image_knight, global_state, knight_pos, monsters, map_view, move
+	global my_map, global_state, monsters, map_view, move
 	global exit_enter_sound_effect, sound_effect_delay, go_to_play_mode
 	exit_enter_sound_effect.play()
 	pygame.time.wait(sound_effect_delay)
-	my_map = create_map()
-	image_knight = pygame.image.load(os.path.join("img/rycerz_clear.png"))
+	my_map = Map()
+
 	map_view = [16*el_size[0], 9*el_size[1]]
-	knight_pos = [7.5*el_size[0], 3.5*el_size[1]]
 	move = [0, 0]
 	global_state = PLAY_MODE
 	go_to_play_mode = True
@@ -390,23 +325,25 @@ def start_game():
 
 pygame.init()
 
+
 width = 1280
 height = 720
 screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 
 el_size = (width / el_horizontal, height / el_vertical)
+knight = Knight(7.5*el_size[0], 3.5*el_size[1])
 
 
-e1 = [(6, 2), (40, 2), (6, 23), (40, 23)]
-e2 = [(17, 3), (29, 3), (17, 22), (29, 22), (4, 12), (42, 12)]
-enemies_positions = e1 + e2
-monsters = [Monster(pos_x, pos_y) for pos_x, pos_y in enemies_positions]
+# e1 = [(6, 2), (40, 2), (6, 23), (40, 23)]
+# e2 = [(17, 3), (29, 3), (17, 22), (29, 22), (4, 12), (42, 12)]
+# enemies_positions = e1 + e2
+# monsters = [Monster(pos_x, pos_y) for pos_x, pos_y in enemies_positions]
 monster_view = 0.0
 
-t1 = [(23 - 3.625, 10), (27, 10), (23 - 3.625, 14), (27, 14)]
-trees_positions = t1
-trees = [Tree(pos_x, pos_y) for pos_x, pos_y in trees_positions]
+# t1 = [(23 - 3.625, 10), (27, 10), (23 - 3.625, 14), (27, 14)]
+# trees_positions = t1
+# trees = [Tree(pos_x, pos_y) for pos_x, pos_y in trees_positions]
 tree_view = 0.0
 
 exit_enter_sound_effect = pygame.mixer.Sound("sounds/enter_exit_sound.wav")
@@ -420,6 +357,7 @@ go_to_play_mode = False
 go_to_menu_mode = False
 
 init_menu()
+
 while is_alive:
 	dt = clock.tick(framerate)
 	if global_state == 0: #menu

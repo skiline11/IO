@@ -43,6 +43,7 @@ class Button:
 		self.active.fill(hicol)
 		self.active.blit(rendered_txt, (self.width / 2 - text_rect[2] / 2, self.height / 2 - text_rect[3] / 2))
 
+
 	def render(self, to, pos=(0, 0)):
 		if mouse_over((self.left + pos[0], self.top + pos[1]), (self.width, self.height)):
 			to.blit(self.active, (self.left + pos[0], self.top + pos[1]))
