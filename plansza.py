@@ -104,7 +104,7 @@ def menu_load_draw():
 		pygame.display.flip()
 
 def load_game_file(f):
-	global knight, my_map, map_view, move, global_state, go_to_play_mode
+	global knight, my_map, map_view, move, global_state, go_to_play_mode, collidable_objects
 	with open('./savedgames/'+f, 'rb') as pickle_file:
 		game_save = pickle.load(pickle_file)
 		knight = game_save[0]
@@ -112,7 +112,7 @@ def load_game_file(f):
 		map_view = game_save[2]
 	exit_enter_sound_effect.play()
 	pygame.time.wait(sound_effect_delay)
-
+	collidable_objects = my_map.monsters
 	move = [0, 0]
 	global_state = PLAY_MODE
 	go_to_play_mode = True
@@ -234,7 +234,7 @@ def game_input():
 
 		if move[0] != 0 or move[1] != 0:
 			for col in collidable_objects:
-				move = col.collide(real_knight_pos[0], real_knight_pos[1], el_size[0], el_size[1], move)
+				move = col.collide(knight, move, map_view)
 
 
 		if move[0] != 0:
@@ -341,15 +341,14 @@ def game_draw():
 
 def start_game():
 	global my_map, global_state, monsters, map_view, move, width, height, collidable_objects
-	global exit_enter_sound_effect, sound_effect_delay, go_to_play_mode
+	global exit_enter_sound_effect, sound_effect_delay, go_to_play_mode, knight
 	exit_enter_sound_effect.play()
 	pygame.time.wait(sound_effect_delay)
 	my_map = Map()
-	collidable_objects = my_map.trees
+	collidable_objects = my_map.monsters
 	map_view = [16*el_size[0], 9*el_size[1]]
 	move = [0, 0]
-	knight.x = width/2
-	knight.y = height/2
+	knight = Knight(7.5*el_size[0], 3.5*el_size[1], el_size[0], el_size[1])
 	global_state = PLAY_MODE
 	go_to_play_mode = True
 
@@ -364,7 +363,7 @@ screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 
 el_size = (width / el_horizontal, height / el_vertical)
-knight = Knight(7.5*el_size[0], 3.5*el_size[1])
+
 
 
 # e1 = [(6, 2), (40, 2), (6, 23), (40, 23)]

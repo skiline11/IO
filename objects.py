@@ -9,6 +9,17 @@ class Monster(object):
 		self.x = x
 		self.y = y
 
+	def collide(self, knight, move, map_view):
+		knight_x = knight.x + map_view[0] + move[0]
+		knight_y = knight.y + map_view[1] + move[1]
+		self_x = self.x*knight.size_x
+		self_y = self.y*knight.size_y
+		if (knight_x < self_x+knight.size_x*2 and knight_x+knight.size_x > self_x and
+            knight_y+knight.size_y > self_y and knight_y < self_y+knight.size_y*2):
+			knight.life -= 2
+			#return [0,0]
+		return move
+
 
 class Tree(object):
 	def __init__(self, x, y):
@@ -16,16 +27,14 @@ class Tree(object):
 		self.x = x
 		self.y = y
 
-	def collide(self, x, y, x_size, y_size, move):
-		print(x, y, x_size, y_size, move)
-		return move
-
 
 class Knight(object):
-	def __init__(self, x, y):
+	def __init__(self, x, y, size_x, size_y):
 		self.type = 'Knight'
 		self.x = x
 		self.y = y
+		self.size_x = size_x
+		self.size_y = size_y
 		self.life = 10
 
 	def get_pos(self):
@@ -34,7 +43,7 @@ class Knight(object):
 
 class Map(object):
 	def __init__(self):
-		print('test')
+		#print('test')
 		self.map = [
 			[
 				{
@@ -71,7 +80,7 @@ class Map(object):
 			for delta_x in range(2):
 				for delta_y in range(2):
 					self.map[pos_x + delta_x][pos_y + delta_y]["color"] = Colors.MONSTER
-					self.map[pos_x + delta_x][pos_y + delta_y]["solid"] = True
+					#self.map[pos_x + delta_x][pos_y + delta_y]["solid"] = True
 			# for x in range(2):
 			# 	for y in range(2):
 			# 		self.map[pos_x + x][pos_y + y]["color"] = Colors.MONSTER
