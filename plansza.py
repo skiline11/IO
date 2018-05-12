@@ -5,9 +5,12 @@ import os.path
 import os
 import copy
 from colors import Colors
-from gui import Button, draw_text
+from gui import Button, draw_text, Text
 from objects import Monster, Tree, Knight, Map
 import pickle
+import question as quest
+import game as gm
+
 
 el_horizontal = 16
 el_vertical = 9
@@ -72,6 +75,14 @@ def menu_draw():
 
 	if go_to_menu_mode == True:
 		go_to_menu_mode = False
+
+	''' #TEXT RENDERING TEST
+	text = Text(
+		"This is a really long sentence with a couple of breaks.\nSometimes it will break even if there isn't a break " \
+        "in the sentence, but that's because the text is too long to fit the screen.\nIt can look strange sometimes.\n" \
+        "This function doesn't check if the text is too high to fit on the height of the surface though, so sometimes " \
+        "text will disappear underneath the surface", bg=Colors.BLUE)
+	text.render(screen, (20,20), (400, 400))'''
 
 	pygame.display.flip()
 
@@ -300,13 +311,15 @@ def draw_trees():
 
 def game_draw():
 	global knight
-	global screen, background, width, height, monster_view, tree_view
+	global screen, background, width, height, monster_view, tree_view, map_view, my_map
 	global go_to_play_mode, go_to_menu_mode
 	background = create_background(screen, width, height)
 	screen.blit(background, (0, 0))
 	screen.blit(sprites[knight.type][0], (knight.x, knight.y))
 	draw_monsters()
 	draw_trees()
+	my_map.draw_question_marks(screen, map_view)
+
 	draw_text(screen, 2, 0, 'Remaining HP: ' + str(knight.life) + '/100')
 	if knight.life < 1:
 		print('The player died!')
@@ -330,6 +343,8 @@ def game_draw():
 			screen.blit(sprites[knight.type][0], (knight.x, knight.y))
 			draw_monsters()
 			draw_trees()
+			my_map.draw_question_marks(screen, map_view)
+
 
 			screen.blit(image_menu, (0, y * (-20.0)))
 			pygame.display.flip()

@@ -2,6 +2,8 @@ import pygame
 import os.path
 from colors import Colors
 from genmap import daj_plansze
+import question as quest
+
 
 class Monster(object):
 	def __init__(self, x, y):
@@ -41,9 +43,10 @@ class Knight(object):
 		pos = (self.x, self.y)
 		return pos
 
+
 class Map(object):
 	def __init__(self):
-		#print('test')
+		# print('test')
 		self.map = [
 			[
 				{
@@ -63,8 +66,7 @@ class Map(object):
 		trees_positions = t1
 		self.trees = [Tree(pos_x, pos_y) for pos_x, pos_y in trees_positions]
 
-		#
-		#dodaje kamienie
+		# dodaje kamienie
 		# pionowe
 
 		for x in range(47):
@@ -103,3 +105,10 @@ class Map(object):
 			for x in [0, 47]:
 				self.map[x][y]["color"] = Colors.END_OF_MAP
 				self.map[x][y]["solid"] = True
+
+		# qeust_marks
+		self.quest_marks = [quest.Question((i*5, i*5)) for i in range(5)]
+
+	def draw_question_marks(self, screen, map_view):
+		for mark in self.quest_marks:
+			mark.draw_mark(screen, map_view)
