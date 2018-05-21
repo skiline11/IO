@@ -10,17 +10,22 @@ class Monster(object):
 		self.type = 'Monster'
 		self.x = x
 		self.y = y
-
-	def collide(self, knight, move, map_view):
+	
+	def doesCollide(self, knight, move, map_view):
 		knight_x = knight.x + map_view[0] + move[0]
 		knight_y = knight.y + map_view[1] + move[1]
 		self_x = self.x*knight.size_x
 		self_y = self.y*knight.size_y
 		if (knight_x < self_x+knight.size_x*2 and knight_x+knight.size_x > self_x and
             knight_y+knight.size_y > self_y and knight_y < self_y+knight.size_y*2):
-			knight.life -= 2
-			#return [0,0]
-		return move
+			return True
+		return False
+
+	def collide(self, knight, move, map_view):
+		if not self.doesCollide(knight, move, map_view):
+			return move
+		#knight.life -= 2
+		#return [-move[0]/10., -move[1]/10.]
 
 
 class Tree(object):
@@ -28,7 +33,60 @@ class Tree(object):
 		self.type = 'Tree'
 		self.x = x
 		self.y = y
+		self.size_x = 60
+		self.size_y = 80
 
+	def doesCollide(self, knight, move, map_view):
+		knight_x = knight.x + map_view[0] + move[0]
+		knight_y = knight.y + map_view[1] + move[1]
+		self_x = self.x*knight.size_x
+		self_y = self.y*knight.size_y
+		if (knight_x < self_x+self.size_x*2 and knight_x+knight.size_x > self_x and
+            knight_y+knight.size_y > self_y and knight_y < self_y+self.size_y*2):
+			return True
+		return False
+
+	def collide(self, knight, move, map_view):
+		if not self.doesCollide(knight, move, map_view):
+			return move
+		if not self.doesCollide(knight, [move[0], 0], map_view):
+			if move[0]==0:
+				move[0] = 5
+			return [move[0], 0]
+		if not self.doesCollide(knight, [0, move[1]], map_view):
+			if move[1]==0:
+				move[1] = 5
+			return [0, move[1]]
+		return [-move[0]/10., -move[1]/10.]
+
+class Ball(object):
+	def __init__(self, x, y):
+		self.type = 'Ball'
+		self.x = x
+		self.y = y
+		self.size_r = 200
+
+	def doesCollide(self, knight, move, map_view):
+		knight_x = knight.x + map_view[0] + move[0]
+		knight_y = knight.y + map_view[1] + move[1]
+		self_x = self.x*knight.size_x + self.size_r/2
+		self_y = self.y*knight.size_y + self.size_r/2
+		if (knight_x - self_x) * (knight_x - self_x) + (knight_y - self_y) * (knight_y - self_y) < self.size_r*self.size_r:
+			return True
+		return False
+
+	def collide(self, knight, move, map_view):
+		if not self.doesCollide(knight, move, map_view):
+			return move
+		if not self.doesCollide(knight, [move[0], 0], map_view):
+			if move[0]==0:
+				move[0] = 5
+			return [move[0], 0]
+		if not self.doesCollide(knight, [0, move[1]], map_view):
+			if move[1]==0:
+				move[1] = 5
+			return [0, move[1]]
+		return [-move[0]/10., -move[1]/10.]
 
 class Knight(object):
 	def __init__(self, x, y, size_x, size_y):
@@ -65,7 +123,7 @@ class Map(object):
 		t1 = [(23 - 3.625, 10), (27, 10), (23 - 3.625, 14), (27, 14)]
 		trees_positions = t1
 		self.trees = [Tree(pos_x, pos_y) for pos_x, pos_y in trees_positions]
-
+		self.trees += [Ball(10, 10)]
 		# dodaje kamienie
 		# pionowe
 

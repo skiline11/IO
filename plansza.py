@@ -26,6 +26,7 @@ sprites = {}
 sprites['Monster'] = [pygame.image.load(os.path.join("img/monster/monster_" + str(id) + ".png")) for id in range(1, 3)]
 sprites['Tree'] = [pygame.image.load(os.path.join("img/tree/v2_tree-" + str(id) + ".png")) for id in range(8)]
 sprites['Knight'] = [pygame.image.load(os.path.join("img/knight/rycerz_clear.png"))]
+sprites['Ball'] = [pygame.image.load(os.path.join("img/ball/ball.png"))]
 
 
 # tworzę okienko i rysuję na nim mapę
@@ -229,10 +230,8 @@ def game_input():
 	real_knight_pos[1] = knight.y + map_view[1]
 
 	if game_input.times_pressed > 0:
-		# print("tutaj")
 		# jeśli znajdujemu się wystarczająco daleko od brzegów planszy to nie będziemy przesówać jej widoku
 		# tylko przesuniemy się rycerzem
-		# print(real_knight_pos)
 		cur_el_x_front = int((real_knight_pos[0]) / el_size[0])
 		cur_el_x_end = int((real_knight_pos[0] + el_size[0] - 1) / el_size[0])
 		next_el_y = int((real_knight_pos[1] + el_size[1] + move[1]) / el_size[1])
@@ -242,50 +241,39 @@ def game_input():
 		cur_el_y_bottom = int((real_knight_pos[1] + el_size[1] - 1) / el_size[1])
 		next_el_x = int((real_knight_pos[0] + el_size[0] + move[0]) / el_size[0])
 		prev_el_x = int((real_knight_pos[0] + move[0]) / el_size[0])
-
-		if move[0] != 0 or move[1] != 0:
+		tempmove = move
+		if tempmove[0] != 0 or tempmove[1] != 0:
 			for col in collidable_objects:
-				move = col.collide(knight, move, map_view)
-
-
-		if move[0] != 0:
+				tempmove = col.collide(knight, tempmove, map_view)
+		
+		
+		if tempmove[0] != 0:
 			# print("poziomo")
-			if (my_map.map[next_el_x][cur_el_y_top]["solid"] or my_map.map[next_el_x][cur_el_y_bottom]["solid"]) and move[
-				0] > 0:
-				move[0] = (next_el_x - 1) * el_size[0] - real_knight_pos[0]
-			if (my_map.map[prev_el_x][cur_el_y_top]["solid"] or my_map.map[prev_el_x][cur_el_y_bottom]["solid"]) and move[
-				0] < 0:
-				move[0] = (prev_el_x + 1) * el_size[0] - real_knight_pos[0]
+			if (my_map.map[next_el_x][cur_el_y_top]["solid"] or my_map.map[next_el_x][cur_el_y_bottom]["solid"]) and tempmove[0] > 0:
+				tempmove[0] = (next_el_x - 1) * el_size[0] - real_knight_pos[0]
+			if (my_map.map[prev_el_x][cur_el_y_top]["solid"] or my_map.map[prev_el_x][cur_el_y_bottom]["solid"]) and tempmove[0] < 0:
+				tempmove[0] = (prev_el_x + 1) * el_size[0] - real_knight_pos[0]
 
-			if ((knight.x + move[0] <= width * (1 - map_movable_area_x) - el_size[0] and
-							 knight.x + move[0] >= width * map_movable_area_x) or
-					(knight.x + move[0] <= width * map_movable_area_x and
-							 map_view[0] == 0 and knight.x + move[0] >= 0) or
-					(knight.x + move[0] >= width * (1 - map_movable_area_x) - el_size[0] and
-							 map_view[0] == len(my_map.map) * el_size[0] - width and knight.x + move[0] <= width -
-						el_size[0])):
-				knight.x += move[0]
-			elif len(my_map.map) * el_size[0] - width >= map_view[0] + move[0] >= 0:
-				map_view[0] += move[0]
+			if ((knight.x + tempmove[0] <= width * (1 - map_movable_area_x) - el_size[0] and knight.x + tempmove[0] >= width * map_movable_area_x) or
+				(knight.x + tempmove[0] <= width * map_movable_area_x and map_view[0] == 0 and knight.x + tempmove[0] >= 0) or
+				(knight.x + tempmove[0] >= width * (1 - map_movable_area_x) - el_size[0] and map_view[0] == len(my_map.map) * el_size[0] - width and knight.x + tempmove[0] <= width - el_size[0])):
+				knight.x += tempmove[0]
+			elif len(my_map.map) * el_size[0] - width >= map_view[0] + tempmove[0] >= 0:
+				map_view[0] += tempmove[0]
 
-		if move[1] != 0:
+		if tempmove[1] != 0:
 			# print("pionowo")
-			if (my_map.map[cur_el_x_front][next_el_y]["solid"] or my_map.map[cur_el_x_end][next_el_y]["solid"]) and move[1] > 0:
-				move[1] = (next_el_y - 1) * el_size[1] - real_knight_pos[1]
-			if (my_map.map[cur_el_x_front][prev_el_y]["solid"] or my_map.map[cur_el_x_end][prev_el_y]["solid"]) and move[1] < 0:
-				move[1] = (prev_el_y + 1) * el_size[1] - real_knight_pos[1]
+			if (my_map.map[cur_el_x_front][next_el_y]["solid"] or my_map.map[cur_el_x_end][next_el_y]["solid"]) and tempmove[1] > 0:
+				tempmove[1] = (next_el_y - 1) * el_size[1] - real_knight_pos[1]
+			if (my_map.map[cur_el_x_front][prev_el_y]["solid"] or my_map.map[cur_el_x_end][prev_el_y]["solid"]) and tempmove[1] < 0:
+				tempmove[1] = (prev_el_y + 1) * el_size[1] - real_knight_pos[1]
 
-			if ((knight.y + move[1] <= height * (1 - map_movable_area_y) - el_size[1] and
-							 knight.y + move[1] >= height * map_movable_area_y) or
-					(knight.y + move[1] <= height * map_movable_area_y and
-							 map_view[1] == 0 and knight.y + move[1] >= 0) or
-					(knight.y + move[1] >= height * (1 - map_movable_area_y) - el_size[1] and
-							 map_view[1] == len(my_map.map[0]) * el_size[1] - height and knight.y + move[1] <= height -
-						el_size[1])):
-				knight.y += move[1]
-			elif len(my_map.map[0]) * el_size[1] - height >= map_view[1] + move[1] >= 0:
-				map_view[1] += move[1]
-
+			if ((knight.y + tempmove[1] <= height * (1 - map_movable_area_y) - el_size[1] and knight.y + tempmove[1] >= height * map_movable_area_y) or
+				(knight.y + tempmove[1] <= height * map_movable_area_y and map_view[1] == 0 and knight.y + tempmove[1] >= 0) or
+				(knight.y + tempmove[1] >= height * (1 - map_movable_area_y) - el_size[1] and map_view[1] == len(my_map.map[0]) * el_size[1] - height and knight.y + tempmove[1] <= height - el_size[1])):
+				knight.y += tempmove[1]
+			elif len(my_map.map[0]) * el_size[1] - height >= map_view[1] + tempmove[1] >= 0:
+				map_view[1] += tempmove[1]
 
 game_input.times_pressed = 0
 
@@ -295,18 +283,15 @@ def draw_monsters():
 	for monster in my_map.monsters:
 		if map_view[0] - (2 * el_size[0]) <= monster.x * el_size[0] <= map_view[0] + width and map_view[1] - (2 * el_size[1]) <= monster.y * el_size[1] <= map_view[1] + height:
 			pos = (monster.x * el_size[0] - map_view[0], monster.y * el_size[1] - map_view[1])
-			screen.blit(sprites[monster.type][int(monster_view)], pos)
+			screen.blit(sprites[monster.type][int(monster_view)%len(sprites[monster.type])], pos)
 
 
 def draw_trees():
 	global my_map, tree_view, map_view, monsters, screen, monsters
 	for tree in my_map.trees:
-		# print("rys drzewo")
 		if map_view[0] - (3 * el_size[0]) <= tree.x * el_size[0] <= map_view[0] + width and map_view[1] - (4 * el_size[1]) <= tree.y * el_size[1] <= map_view[1] + height:
-			# print("rysujemy --------------------")
 			pos = (tree.x * el_size[0] - map_view[0], tree.y * el_size[1] - map_view[1])
-			screen.blit(sprites[tree.type][int(tree_view)], pos)
-			# print("Po narysowaniu  na pos = " + str(tree.x) + ", " + str(el_size[0]) + ", " + str(map_view[0]) + "!!!!!")
+			screen.blit(sprites[tree.type][int(tree_view)%len(sprites[tree.type])], pos)
 
 
 def game_draw():
@@ -332,11 +317,8 @@ def game_draw():
 	if tree_view >= 8.0:
 		tree_view = 0
 
-	# print("go to play mode = " + str(go_to_play_mode))
 	if go_to_play_mode == True:
-		# print("................z true")
 		go_to_play_mode = False
-
 		# wyświetlam animację znikania menu
 		for y in range(int(height / 20)):
 			screen.blit(background, (0, 0))
@@ -345,12 +327,10 @@ def game_draw():
 			draw_trees()
 			my_map.draw_question_marks(screen, map_view)
 
-
 			screen.blit(image_menu, (0, y * (-20.0)))
 			pygame.display.flip()
 			pygame.time.wait(1)
 	elif go_to_menu_mode == False:
-		# print("................z false")
 		pygame.display.flip()
 
 
@@ -360,7 +340,7 @@ def start_game():
 	exit_enter_sound_effect.play()
 	pygame.time.wait(sound_effect_delay)
 	my_map = Map()
-	collidable_objects = my_map.monsters
+	collidable_objects = my_map.monsters + my_map.trees
 	map_view = [16*el_size[0], 9*el_size[1]]
 	move = [0, 0]
 	knight = Knight(7.5*el_size[0], 3.5*el_size[1], el_size[0], el_size[1])
