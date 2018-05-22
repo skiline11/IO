@@ -10,20 +10,25 @@ class Monster(object):
 		self.type = 'Monster'
 		self.x = x
 		self.y = y
+		self.size_x = 160
+		self.size_y = 160
+		self.to_be_removed = False
+		self.life = 10
 	
-	def doesCollide(self, knight, move, map_view):
-		knight_x = knight.x + map_view[0] + move[0]
-		knight_y = knight.y + map_view[1] + move[1]
-		self_x = self.x*knight.size_x
-		self_y = self.y*knight.size_y
-		if (knight_x < self_x+knight.size_x*2 and knight_x+knight.size_x > self_x and
-            knight_y+knight.size_y > self_y and knight_y < self_y+knight.size_y*2):
+	def doesCollide(self, x, y, width, height, move, map_view):
+		knight_x = x + map_view[0] + move[0]
+		knight_y = y + map_view[1] + move[1]
+		self_x = self.x*width
+		self_y = self.y*height
+		if (knight_x < self_x+self.size_x and knight_x+width > self_x and
+            knight_y+height > self_y and knight_y < self_y+self.size_y):
 			return True
 		return False
 
 	def collide(self, knight, move, map_view):
-		if not self.doesCollide(knight, move, map_view):
-			return move
+		return move
+		#if not self.doesCollide(knight, move, map_view):
+		#	return move
 		#knight.life -= 2
 		#return [-move[0]/10., -move[1]/10.]
 
@@ -33,27 +38,30 @@ class Tree(object):
 		self.type = 'Tree'
 		self.x = x
 		self.y = y
-		self.size_x = 60
-		self.size_y = 80
+		self.size_x = 120
+		self.size_y = 160
+		self.evil = False
+		self.to_be_removed = False
+		self.counter = 0
 
-	def doesCollide(self, knight, move, map_view):
-		knight_x = knight.x + map_view[0] + move[0]
-		knight_y = knight.y + map_view[1] + move[1]
-		self_x = self.x*knight.size_x
-		self_y = self.y*knight.size_y
-		if (knight_x < self_x+self.size_x*2 and knight_x+knight.size_x > self_x and
-            knight_y+knight.size_y > self_y and knight_y < self_y+self.size_y*2):
+	def doesCollide(self, x, y, width, height, move, map_view):
+		knight_x = x + map_view[0] + move[0]
+		knight_y = y + map_view[1] + move[1]
+		self_x = self.x*80
+		self_y = self.y*80
+		if (knight_x < self_x+self.size_x and knight_x+width > self_x and
+            knight_y+height > self_y and knight_y < self_y+self.size_y):
 			return True
 		return False
 
 	def collide(self, knight, move, map_view):
-		if not self.doesCollide(knight, move, map_view):
+		if not self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, move, map_view):
 			return move
-		if not self.doesCollide(knight, [move[0], 0], map_view):
+		if not self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, [move[0], 0], map_view):
 			if move[0]==0:
 				move[0] = 5
 			return [move[0], 0]
-		if not self.doesCollide(knight, [0, move[1]], map_view):
+		if not self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, [0, move[1]], map_view):
 			if move[1]==0:
 				move[1] = 5
 			return [0, move[1]]
@@ -64,29 +72,104 @@ class Ball(object):
 		self.type = 'Ball'
 		self.x = x
 		self.y = y
+		self.size_x = 200
+		self.size_y = 200
 		self.size_r = 200
+		self.to_be_removed = False
 
-	def doesCollide(self, knight, move, map_view):
-		knight_x = knight.x + map_view[0] + move[0]
-		knight_y = knight.y + map_view[1] + move[1]
-		self_x = self.x*knight.size_x + self.size_r/2
-		self_y = self.y*knight.size_y + self.size_r/2
+	def doesCollide(self, x, y, width, height, move, map_view):
+		knight_x = x + map_view[0] + move[0]
+		knight_y = y + map_view[1] + move[1]
+		self_x = self.x*80 + self.size_r/2
+		self_y = self.y*80 + self.size_r/2
 		if (knight_x - self_x) * (knight_x - self_x) + (knight_y - self_y) * (knight_y - self_y) < self.size_r*self.size_r:
 			return True
 		return False
 
 	def collide(self, knight, move, map_view):
-		if not self.doesCollide(knight, move, map_view):
+		if not self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, move, map_view):
 			return move
-		if not self.doesCollide(knight, [move[0], 0], map_view):
+		if not self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, [move[0], 0], map_view):
 			if move[0]==0:
 				move[0] = 5
-			return [move[0], 0]
-		if not self.doesCollide(knight, [0, move[1]], map_view):
+			return [move[0], -move[1]/5.]
+		if not self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, [0, move[1]], map_view):
 			if move[1]==0:
 				move[1] = 5
-			return [0, move[1]]
-		return [-move[0]/10., -move[1]/10.]
+			return [-move[0]/5, move[1]]
+		return [-move[0]/5., -move[1]/5.]
+
+class Ammo(object):
+	def __init__(self, x, y):
+		self.type = 'Ammo'
+		self.x = x
+		self.y = y
+		self.size_x = 50
+		self.size_y = 50
+		self.size_r = 50
+		self.to_be_removed = False
+
+	def doesCollide(self, x, y, width, height, move, map_view):
+		knight_x = x + map_view[0] + move[0]
+		knight_y = y + map_view[1] + move[1]
+		self_x = self.x*80 + self.size_r/2
+		self_y = self.y*80 + self.size_r/2
+		if (knight_x - self_x+width/2) * (knight_x - self_x+width/2) + (knight_y+height/2 - self_y) * (knight_y - self_y+height/2) < self.size_r*self.size_r:
+			return True
+		return False
+
+	def collide(self, knight, move, map_view):
+		if self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, move, map_view):
+			knight.ammo += 5;
+			self.to_be_removed = True
+		return move
+
+class Bullet(object):
+	def __init__(self, x, y, vx, vy, life, dmg):
+		self.type = 'Bullet'
+		self.x = x
+		self.y = y
+		self.vx = vx
+		self.vy = vy
+		self.size_x = 50
+		self.size_y = 50
+		self.size_r = 50
+		self.dmg = dmg
+		self.number_of_ticks = 0
+		self.lifetime = life
+		self.to_be_removed = False
+
+	def tick(self, knight, move, map_view, collidable):
+		self.x += self.vx
+		self.y += self.vy
+		if self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, move, map_view):
+			knight.life -= self.dmg;
+			self.to_be_removed = True
+		for c in collidable:
+			if self != c and self.doesCollide(c.x*80, c.y*80, c.size_x, c.size_y, [0,0], [0,0]):
+				if c.type == 'Monster':
+					c.life -= self.dmg
+					if c.life <= 0:
+						c.to_be_removed = True
+					self.to_be_removed = True
+		self.number_of_ticks += 1
+		if self.number_of_ticks > self.lifetime:
+			self.to_be_removed = True
+
+	def doesCollide(self, x, y, width, height, move, map_view):
+		knight_x = x + map_view[0] + move[0]
+		knight_y = y + map_view[1] + move[1]
+		self_x = self.x*80 + self.size_r/2
+		self_y = self.y*80 + self.size_r/2
+		if (knight_x - self_x + width/2) * (knight_x - self_x + width/2) + (knight_y+height/2 - self_y) * (knight_y - self_y+height/2) < self.size_r*self.size_r:
+			return True
+		return False
+
+	def collide(self, knight, move, map_view):
+		if self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, move, map_view):
+			knight.life -= 2;
+			self.to_be_removed = True
+		return move
 
 class Knight(object):
 	def __init__(self, x, y, size_x, size_y):
@@ -96,6 +179,8 @@ class Knight(object):
 		self.size_x = size_x
 		self.size_y = size_y
 		self.life = 10
+		self.to_be_removed = False
+		self.ammo = 0
 
 	def get_pos(self):
 		pos = (self.x, self.y)
@@ -119,10 +204,13 @@ class Map(object):
 		# e2 = [(17, 3), (29, 3), (17, 22), (29, 22), (4, 12), (42, 12)]
 		# enemies_positions = e1 + e2
 		self.monsters = [Monster(pos_x, pos_y) for pos_x, pos_y in dane_o_planszy["enemies_pos"]]
+		self.monsters += [Ammo(5+i*5, i*5) for i in range(5)]
 		#
 		t1 = [(23 - 3.625, 10), (27, 10), (23 - 3.625, 14), (27, 14)]
 		trees_positions = t1
 		self.trees = [Tree(pos_x, pos_y) for pos_x, pos_y in trees_positions]
+		self.trees[0].evil = True
+		self.trees[2].evil = True
 		self.trees += [Ball(10, 10)]
 		# dodaje kamienie
 		# pionowe

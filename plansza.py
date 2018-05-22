@@ -6,7 +6,7 @@ import os
 import copy
 from colors import Colors
 from gui import Button, draw_text, Text
-from objects import Monster, Tree, Knight, Map
+from objects import Monster, Tree, Knight, Map, Bullet, Ammo
 import pickle
 import question as quest
 import game as gm
@@ -21,12 +21,15 @@ MENU_LOAD_MODE = 2
 menu_obj = []
 menu_savegame_buttons = []
 collidable_objects = []
+tickable_objects = []
 
 sprites = {}
 sprites['Monster'] = [pygame.image.load(os.path.join("img/monster/monster_" + str(id) + ".png")) for id in range(1, 3)]
 sprites['Tree'] = [pygame.image.load(os.path.join("img/tree/v2_tree-" + str(id) + ".png")) for id in range(8)]
 sprites['Knight'] = [pygame.image.load(os.path.join("img/knight/rycerz_clear.png"))]
 sprites['Ball'] = [pygame.image.load(os.path.join("img/ball/ball.png"))]
+sprites['Ammo'] = [pygame.image.load(os.path.join("img/ammo/ammo.png"))]
+sprites['Bullet'] = [pygame.image.load(os.path.join("img/bullet/bullet.png"))]
 
 
 # tworzę okienko i rysuję na nim mapę
@@ -64,7 +67,7 @@ def init_menu():
 	menu_obj.append(Button((horizontal+300, vertical), (button_width, button_height), Colors.BLACK, Colors.RED, go_to_load_menu, "LOAD"))
 	image_menu = pygame.image.load(os.path.join("img/menu.jpg"))
 	pygame.mixer.music.load('sounds/soundtrack.mp3')
-	pygame.mixer.music.play(-1)
+	#pygame.mixer.music.play(-1)
 
 
 def menu_draw():
@@ -205,6 +208,18 @@ def game_input():
 					move[1] = 0
 				if event.key == pygame.K_RETURN:
 					save_game_file('./savedgames/test.txt')
+				if event.key == pygame.K_F4:
+					add_bullet(10, 10, 0.1, 0)
+			if event.type == pygame.MOUSEBUTTONDOWN and knight.ammo > 0:
+				knight.ammo -= 1
+				pos = pygame.mouse.get_pos()
+				pos = [pos[0], pos[1]]
+				pos[0] -= knight.x+knight.size_x/2-15
+				pos[1] -= knight.y+knight.size_y/2-15
+				norm = math.sqrt(pos[0]**2 + pos[1]**2)
+				pos[0] /= norm
+				pos[1] /= norm
+				add_bullet((map_view[0] + knight.x+knight.size_x/2 + 100*pos[0])/knight.size_x, (map_view[1] + knight.y + knight.size_y/2 + 100*pos[1])/knight.size_y, pos[0]/10., pos[1]/10.)
 			if event.type == pygame.KEYDOWN:
 				game_input.times_pressed += 1
 				if event.key == pygame.K_ESCAPE:
@@ -274,30 +289,57 @@ def game_input():
 				knight.y += tempmove[1]
 			elif len(my_map.map[0]) * el_size[1] - height >= map_view[1] + tempmove[1] >= 0:
 				map_view[1] += tempmove[1]
-
 game_input.times_pressed = 0
 
 
 def draw_monsters():
 	global my_map, monster_view, map_view, screen
+	to_kill = []
 	for monster in my_map.monsters:
 		if map_view[0] - (2 * el_size[0]) <= monster.x * el_size[0] <= map_view[0] + width and map_view[1] - (2 * el_size[1]) <= monster.y * el_size[1] <= map_view[1] + height:
 			pos = (monster.x * el_size[0] - map_view[0], monster.y * el_size[1] - map_view[1])
 			screen.blit(sprites[monster.type][int(monster_view)%len(sprites[monster.type])], pos)
+			if monster.type=='Monster':
+				draw_text(screen, pos[0]+el_size[0]-15, pos[1], str(monster.life))
+		if monster.to_be_removed:
+			to_kill.append(monster)
+	for k in to_kill:
+		my_map.monsters.remove(k)
+		collidable_objects.remove(k)
+		if k.type == 'Bullet':
+			tickable_objects.remove(k)
 
 
 def draw_trees():
 	global my_map, tree_view, map_view, monsters, screen, monsters
+	to_kill = []
 	for tree in my_map.trees:
 		if map_view[0] - (3 * el_size[0]) <= tree.x * el_size[0] <= map_view[0] + width and map_view[1] - (4 * el_size[1]) <= tree.y * el_size[1] <= map_view[1] + height:
 			pos = (tree.x * el_size[0] - map_view[0], tree.y * el_size[1] - map_view[1])
 			screen.blit(sprites[tree.type][int(tree_view)%len(sprites[tree.type])], pos)
+		if tree.type == 'Tree' and tree.evil and (abs(tree_view)<0.01):
+			tree.counter += 1
+			tree.counter %= 2
+			if tree.counter == 0:
+				add_bullet((tree.x*el_size[0]+tree.size_x/2)/el_size[0], (tree.y*el_size[1]+tree.size_y/2)/el_size[1], 0.05, 0, 150, 10)
+		if tree.to_be_removed:
+			to_kill.append(tree)
+	for k in to_kill:
+		my_map.trees.remove(k)
+		collidable_objects.remove(k)
 
+def add_bullet(x, y, vx, vy, life=100, dmg=2):
+	b = Bullet(x, y, vx, vy, life, dmg)
+	my_map.monsters.append(b)
+	collidable_objects.append(b)
+	tickable_objects.append(b)
 
 def game_draw():
 	global knight
 	global screen, background, width, height, monster_view, tree_view, map_view, my_map
-	global go_to_play_mode, go_to_menu_mode
+	global go_to_play_mode, go_to_menu_mode, tickable_objects, collidable_objects
+	for o in tickable_objects:
+		o.tick(knight, move, map_view, collidable_objects)
 	background = create_background(screen, width, height)
 	screen.blit(background, (0, 0))
 	screen.blit(sprites[knight.type][0], (knight.x, knight.y))
@@ -305,7 +347,8 @@ def game_draw():
 	draw_trees()
 	my_map.draw_question_marks(screen, map_view)
 
-	draw_text(screen, 2, 0, 'Remaining HP: ' + str(knight.life) + '/100')
+	draw_text(screen, 2, 0, 'HP: ' + str(knight.life) + '/100')
+	draw_text(screen, 2, 20, 'Ammo: ' + str(knight.ammo))
 	if knight.life < 1:
 		print('The player died!')
 		go_to_menu()
