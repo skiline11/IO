@@ -35,7 +35,7 @@ class Monster(object):
 			self.x = self.x*80
 			self.y = self.y*80
 			if self.tick_counter == 0 and (self.x - knight.x - map_view[0])**2 + (self.y - knight.y - map_view[1])**2 < 500**2:
-				my_map.add_bullet((self.x+50*moveto[0])/80, (self.y+50*moveto[1])/80, moveto[0]/20, moveto[1]/20, 1000, 1)
+				my_map.add_bullet((self.x+self.size_x/2+85*moveto[0])/80, (self.y+self.size_y/2+85*moveto[1])/80, moveto[0]/20, moveto[1]/20, 1000, 1)
 			for c in my_map.collidable_objects:
 				if self != c:
 					moveto = c.collide(self, moveto, [0,0])
