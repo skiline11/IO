@@ -211,7 +211,7 @@ class Ammo(object):
 
 	def collide(self, knight, move, map_view):
 		if self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, move, map_view) and knight.is_knight:
-			knight.ammo += 5;
+			knight.ammo += 5
 			self.to_be_removed = True
 		return move
 
@@ -298,14 +298,15 @@ class Map(object):
 		self.monsters = [Monster(pos_x, pos_y) for pos_x, pos_y in dane_o_planszy["enemies_pos"]]
 		self.monsters += [SmallMonster(pos_x+3, pos_y) for pos_x, pos_y in dane_o_planszy["enemies_pos"]]
 		self.tickable_objects = self.monsters[:]
-		self.monsters += [Ammo(5+i*5, i*5) for i in range(5)]
+		# self.monsters += [Ammo(5+i*5, i*5) for i in range(5)]
+		self.monsters += [Ammo(pos_x, pos_y) for pos_x, pos_y in dane_o_planszy["ammo_pos"]]
 		t1 = [(23 - 3.625, 10), (27, 10), (23 - 3.625, 14), (27, 14)]
 		trees_positions = t1
 		self.trees = [Tree(pos_x, pos_y) for pos_x, pos_y in trees_positions]
 		self.trees[0].evil = True
 		self.trees[2].evil = True
-		self.trees += [Ball(10, 10)]
-
+		# self.trees += [Ball(10, 10)]
+		self.trees += [Ball(pos_x, pos_y) for pos_x, pos_y in dane_o_planszy["ball_pos"]]
 		self.collidable_objects = self.trees + self.monsters
 		# dodaje kamienie
 		# pionowe
@@ -348,7 +349,10 @@ class Map(object):
 				self.map[x][y]["solid"] = True
 
 		# qeust_marks
-		self.quest_marks = [quest.Question((i*5, i*5)) for i in range(5)]
+		# self.quest_marks = [quest.Question((i*5, i*5)) for i in range(5)]
+		self.quest_marks = []
+		for x, y in dane_o_planszy["questionmark_pos"]:
+			self.quest_marks.append(quest.Question((x, y)))
 
 	def draw_question_marks(self, screen, map_view):
 		for mark in self.quest_marks:

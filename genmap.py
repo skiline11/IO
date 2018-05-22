@@ -16,8 +16,8 @@ def daj_plansze():
 		ile_razy_prubowalem = 0
 		while udalo_sie == False and ile_razy_prubowalem < 10:
 			udalo_sie = True
-			x = random.randint(1, 46)
-			y = random.randint(1, 25)
+			x = random.randint(1, 45)
+			y = random.randint(1, 24)
 			for pos_x, pos_y in pozycje_przeciwnikow:
 				dif_x = pos_x - x
 				dif_y = pos_y - y
@@ -69,7 +69,56 @@ def daj_plansze():
 			else:
 				if plansza[l][y]["znak"] != "P":
 					plansza[l][y]["znak"] = "S"
-	return {"plansza": plansza, "enemies_pos": pozycje_przeciwnikow}
+
+	# dodajemy 20 ammo na plansze
+	pozycje_ammo = []
+	for id in range(20):
+		x = random.randint(1, 45)
+		y = random.randint(1, 24)
+		if plansza[x][y]["znak"] == "P":
+			id -= 1
+		else:
+			plansza[x][y]["znak"] = "ammo"
+			pozycje_ammo.append((x, y))
+
+	pozycje_ball = []
+	done = False
+	while not done:
+		x = random.randint(1, 43)
+		y = random.randint(1, 22)
+		done = True
+		for vert in range(4):
+			for hor in range(4):
+				if plansza[int(x + vert)][int(y + hor)]["znak"] == "P" or plansza[int(x + vert)][int(y + hor)][
+					"znak"] == "ammo":
+					done = False
+		if done:
+			plansza[x][y]["znak"] = "ball"
+			pozycje_ball.append((x, y))
+
+	pozycje_questionmark = []
+	for i in range(5):
+		x = random.randint(1, 47)
+		y = random.randint(1, 26)
+		udalo_sie = True
+		if plansza[x][y]["znak"] == ".":
+			for vert in range(4):
+				for hor in range(4):
+					if x + vert < 48 and y + hor < 27:
+						try:
+							if plansza[x + vert][y + hor]["znak"] == "ball":
+								udalo_sie = False
+						except IndexError:
+							print("Wywaliło błąd dla x = " + str(x) + ", vert = " + str(vert) + ", y = " + str(
+								y) + ", hor = " + str(hor))
+							exit()
+		if udalo_sie:
+			plansza[x][y]["znak"] = "?"
+			pozycje_questionmark.append((x, y))
+		else:
+			i -= 1
+
+	return {"plansza": plansza, "enemies_pos": pozycje_przeciwnikow, "ammo_pos": pozycje_ammo, "ball_pos": pozycje_ball, "questionmark_pos": pozycje_questionmark}
 
 	# for y in range(27):
 	# 	line = ""
