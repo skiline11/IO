@@ -1,9 +1,9 @@
+import math
 import pygame
 import os.path
 from colors import Colors
 from genmap import daj_plansze
 import question as quest
-
 
 class Monster(object):
 	def __init__(self, x, y):
@@ -13,7 +13,40 @@ class Monster(object):
 		self.size_x = 160
 		self.size_y = 160
 		self.to_be_removed = False
-		self.life = 10
+		self.tick_counter = 0
+		self.life = 15
+		self.ammo = 0
+		self.is_knight = False
+
+	def tick(self, knight, move, map_view, my_map):
+		if self.life <= 0:
+			self.to_be_removed = True
+		moveto = [0,0]
+		if (self.x*80 - knight.x - map_view[0])**2 + (self.y*80 - knight.y - map_view[1])**2 < 1000**2:
+			moveto[0] = knight.x+80+map_view[0] - self.x*80
+			moveto[1] = knight.y+80+map_view[1] - self.y*80
+			norm = math.sqrt(moveto[0]**2 + moveto[1]**2)
+			moveto[0] /= norm
+			moveto[1] /= norm
+			#if self.x*80 + moveto[0] < 80 or self.x*80 + moveto[0] + self.size_x > len(my_map.map)*80-85:
+			#	moveto[0] = 0
+			#if self.y*80 + moveto[1] < 80 or self.y*80 + moveto[1] + self.size_y > len(my_map.map[0])*80-160:
+			#	moveto[1] = 0
+			self.x = self.x*80
+			self.y = self.y*80
+			if self.tick_counter == 0 and (self.x - knight.x - map_view[0])**2 + (self.y - knight.y - map_view[1])**2 < 500**2:
+				my_map.add_bullet((self.x+50*moveto[0])/80, (self.y+50*moveto[1])/80, moveto[0]/20, moveto[1]/20, 1000, 1)
+			for c in my_map.collidable_objects:
+				if self != c:
+					moveto = c.collide(self, moveto, [0,0])
+			self.x += moveto[0]
+			self.y += moveto[1]
+			self.x = self.x/80
+			self.y = self.y/80
+		self.tick_counter += 1
+		self.tick_counter %= 50
+		if self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, move, map_view) and self.tick_counter == 0:
+			knight.life -= 3;
 	
 	def doesCollide(self, x, y, width, height, move, map_view):
 		knight_x = x + map_view[0] + move[0]
@@ -26,10 +59,68 @@ class Monster(object):
 		return False
 
 	def collide(self, knight, move, map_view):
+		if not self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, move, map_view):
+			return move
+		if self.tick_counter == 0 and knight.is_knight:
+			knight.life -= 3
 		return move
-		#if not self.doesCollide(knight, move, map_view):
-		#	return move
-		#knight.life -= 2
+
+class SmallMonster(object):
+	def __init__(self, x, y):
+		self.type = 'SmallMonster'
+		self.x = x
+		self.y = y
+		self.size_x = 100
+		self.size_y = 100
+		self.to_be_removed = False
+		self.tick_counter = 0
+		self.life = 5
+		self.ammo = 0
+		self.is_knight = False
+
+	def tick(self, knight, move, map_view, my_map):
+		if self.life <= 0:
+			self.to_be_removed = True
+		moveto = [0,0]
+		moveto[0] = knight.x+80+map_view[0] - self.x*80
+		moveto[1] = knight.y+80+map_view[1] - self.y*80
+		norm = math.sqrt(moveto[0]**2 + moveto[1]**2)/2.
+		moveto[0] /= norm
+		moveto[1] /= norm
+		#if self.x*80 + moveto[0] < 80 or self.x*80 + moveto[0] + self.size_x > len(my_map.map)*80-85:
+		#	moveto[0] = 0
+		#if self.y*80 + moveto[1] < 80 or self.y*80 + moveto[1] + self.size_y > len(my_map.map[0])*80-160:
+		#	moveto[1] = 0
+		self.x = self.x*80
+		self.y = self.y*80
+		for c in my_map.collidable_objects:
+			if self != c:
+				moveto = c.collide(self, moveto, [0,0])
+		self.x += moveto[0]
+		self.y += moveto[1]
+		self.x = self.x/80
+		self.y = self.y/80
+		self.tick_counter += 1
+		self.tick_counter %= 25
+		if self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, move, map_view) and self.tick_counter == 0:
+			knight.life -= 3;
+	
+	def doesCollide(self, x, y, width, height, move, map_view):
+		knight_x = x + map_view[0] + move[0]
+		knight_y = y + map_view[1] + move[1]
+		self_x = self.x*width
+		self_y = self.y*height
+		if (knight_x < self_x+self.size_x and knight_x+width > self_x and
+            knight_y+height > self_y and knight_y < self_y+self.size_y):
+			return True
+		return False
+
+	def collide(self, knight, move, map_view):
+		if not self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, move, map_view):
+			return move
+		if self.tick_counter == 0 and knight.is_knight:
+			knight.life -= 3
+		return move
 		#return [-move[0]/10., -move[1]/10.]
 
 
@@ -119,7 +210,7 @@ class Ammo(object):
 		return False
 
 	def collide(self, knight, move, map_view):
-		if self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, move, map_view):
+		if self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, move, map_view) and knight.is_knight:
 			knight.ammo += 5;
 			self.to_be_removed = True
 		return move
@@ -139,15 +230,15 @@ class Bullet(object):
 		self.lifetime = life
 		self.to_be_removed = False
 
-	def tick(self, knight, move, map_view, collidable):
+	def tick(self, knight, move, map_view, my_map):
 		self.x += self.vx
 		self.y += self.vy
 		if self.doesCollide(knight.x, knight.y, knight.size_x, knight.size_y, move, map_view):
 			knight.life -= self.dmg;
 			self.to_be_removed = True
-		for c in collidable:
+		for c in my_map.collidable_objects:
 			if self != c and self.doesCollide(c.x*80, c.y*80, c.size_x, c.size_y, [0,0], [0,0]):
-				if c.type == 'Monster':
+				if c.type == 'Monster' or c.type == 'SmallMonster' or c.type == 'ShootingMonster':
 					c.life -= self.dmg
 					if c.life <= 0:
 						c.to_be_removed = True
@@ -178,9 +269,10 @@ class Knight(object):
 		self.y = y
 		self.size_x = size_x
 		self.size_y = size_y
-		self.life = 10
+		self.life = 100
 		self.to_be_removed = False
 		self.ammo = 0
+		self.is_knight = True
 
 	def get_pos(self):
 		pos = (self.x, self.y)
@@ -204,14 +296,17 @@ class Map(object):
 		# e2 = [(17, 3), (29, 3), (17, 22), (29, 22), (4, 12), (42, 12)]
 		# enemies_positions = e1 + e2
 		self.monsters = [Monster(pos_x, pos_y) for pos_x, pos_y in dane_o_planszy["enemies_pos"]]
+		self.monsters += [SmallMonster(pos_x+3, pos_y) for pos_x, pos_y in dane_o_planszy["enemies_pos"]]
+		self.tickable_objects = self.monsters[:]
 		self.monsters += [Ammo(5+i*5, i*5) for i in range(5)]
-		#
 		t1 = [(23 - 3.625, 10), (27, 10), (23 - 3.625, 14), (27, 14)]
 		trees_positions = t1
 		self.trees = [Tree(pos_x, pos_y) for pos_x, pos_y in trees_positions]
 		self.trees[0].evil = True
 		self.trees[2].evil = True
 		self.trees += [Ball(10, 10)]
+
+		self.collidable_objects = self.trees + self.monsters
 		# dodaje kamienie
 		# pionowe
 
@@ -258,3 +353,9 @@ class Map(object):
 	def draw_question_marks(self, screen, map_view):
 		for mark in self.quest_marks:
 			mark.draw_mark(screen, map_view)
+	
+	def add_bullet(self, x, y, vx, vy, life=100, dmg=2):
+		b = Bullet(x, y, vx, vy, life, dmg)
+		self.monsters.append(b)
+		self.collidable_objects.append(b)
+		self.tickable_objects.append(b)

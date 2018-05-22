@@ -20,8 +20,7 @@ MENU_MODE = 0
 MENU_LOAD_MODE = 2
 menu_obj = []
 menu_savegame_buttons = []
-collidable_objects = []
-tickable_objects = []
+is_ticking_freezed = False
 
 sprites = {}
 sprites['Monster'] = [pygame.image.load(os.path.join("img/monster/monster_" + str(id) + ".png")) for id in range(1, 3)]
@@ -30,6 +29,8 @@ sprites['Knight'] = [pygame.image.load(os.path.join("img/knight/rycerz_clear.png
 sprites['Ball'] = [pygame.image.load(os.path.join("img/ball/ball.png"))]
 sprites['Ammo'] = [pygame.image.load(os.path.join("img/ammo/ammo.png"))]
 sprites['Bullet'] = [pygame.image.load(os.path.join("img/bullet/bullet.png"))]
+sprites['SmallMonster'] = [pygame.image.load(os.path.join("img/ball/smallball.png"))]
+sprites['ShootingMonster'] = [pygame.image.load(os.path.join("img/ball/smallyellowball.png"))]
 
 
 # tworzę okienko i rysuję na nim mapę
@@ -67,7 +68,7 @@ def init_menu():
 	menu_obj.append(Button((horizontal+300, vertical), (button_width, button_height), Colors.BLACK, Colors.RED, go_to_load_menu, "LOAD"))
 	image_menu = pygame.image.load(os.path.join("img/menu.jpg"))
 	pygame.mixer.music.load('sounds/soundtrack.mp3')
-	#pygame.mixer.music.play(-1)
+	pygame.mixer.music.play(-1)
 
 
 def menu_draw():
@@ -119,7 +120,7 @@ def menu_load_draw():
 		pygame.display.flip()
 
 def load_game_file(f):
-	global knight, my_map, map_view, move, global_state, go_to_play_mode, collidable_objects
+	global knight, my_map, map_view, move, global_state, go_to_play_mode
 	with open('./savedgames/'+f, 'rb') as pickle_file:
 		game_save = pickle.load(pickle_file)
 		knight = game_save[0]
@@ -127,7 +128,6 @@ def load_game_file(f):
 		map_view = game_save[2]
 	exit_enter_sound_effect.play()
 	pygame.time.wait(sound_effect_delay)
-	collidable_objects = my_map.monsters
 	move = [0, 0]
 	global_state = PLAY_MODE
 	go_to_play_mode = True
@@ -189,7 +189,7 @@ def game_input():
 	move_val = 10
 	global knight
 	global move, height, width, clock, el_size, is_alive, my_map, global_state
-	global exit_enter_sound_effect, sound_effect_delay, go_to_menu_mode
+	global exit_enter_sound_effect, sound_effect_delay, go_to_menu_mode, is_ticking_freezed
 	global screen
 	map_movable_area_x = 1.0/16
 	map_movable_area_y = 1.0/9
@@ -209,7 +209,7 @@ def game_input():
 				if event.key == pygame.K_RETURN:
 					save_game_file('./savedgames/test.txt')
 				if event.key == pygame.K_F4:
-					add_bullet(10, 10, 0.1, 0)
+					is_ticking_freezed = not is_ticking_freezed
 			if event.type == pygame.MOUSEBUTTONDOWN and knight.ammo > 0:
 				knight.ammo -= 1
 				pos = pygame.mouse.get_pos()
@@ -219,7 +219,7 @@ def game_input():
 				norm = math.sqrt(pos[0]**2 + pos[1]**2)
 				pos[0] /= norm
 				pos[1] /= norm
-				add_bullet((map_view[0] + knight.x+knight.size_x/2 + 100*pos[0])/knight.size_x, (map_view[1] + knight.y + knight.size_y/2 + 100*pos[1])/knight.size_y, pos[0]/10., pos[1]/10.)
+				my_map.add_bullet((map_view[0] + knight.x+knight.size_x/2 + 100*pos[0])/knight.size_x, (map_view[1] + knight.y + knight.size_y/2 + 100*pos[1])/knight.size_y, pos[0]/10., pos[1]/10.)
 			if event.type == pygame.KEYDOWN:
 				game_input.times_pressed += 1
 				if event.key == pygame.K_ESCAPE:
@@ -258,7 +258,7 @@ def game_input():
 		prev_el_x = int((real_knight_pos[0] + move[0]) / el_size[0])
 		tempmove = move
 		if tempmove[0] != 0 or tempmove[1] != 0:
-			for col in collidable_objects:
+			for col in my_map.collidable_objects:
 				tempmove = col.collide(knight, tempmove, map_view)
 		
 		
@@ -301,13 +301,15 @@ def draw_monsters():
 			screen.blit(sprites[monster.type][int(monster_view)%len(sprites[monster.type])], pos)
 			if monster.type=='Monster':
 				draw_text(screen, pos[0]+el_size[0]-15, pos[1], str(monster.life))
+			if monster.type == 'SmallMonster' or monster.type == 'ShootingMonster':
+				draw_text(screen, pos[0]-el_size[0]/2-7, pos[1], str(monster.life))
 		if monster.to_be_removed:
 			to_kill.append(monster)
 	for k in to_kill:
 		my_map.monsters.remove(k)
-		collidable_objects.remove(k)
-		if k.type == 'Bullet':
-			tickable_objects.remove(k)
+		my_map.collidable_objects.remove(k)
+		if k.type == 'Bullet' or k.type == 'SmallMonster' or k.type == 'Monster':
+			my_map.tickable_objects.remove(k)
 
 
 def draw_trees():
@@ -321,25 +323,20 @@ def draw_trees():
 			tree.counter += 1
 			tree.counter %= 2
 			if tree.counter == 0:
-				add_bullet((tree.x*el_size[0]+tree.size_x/2)/el_size[0], (tree.y*el_size[1]+tree.size_y/2)/el_size[1], 0.05, 0, 150, 10)
+				my_map.add_bullet((tree.x*el_size[0]+tree.size_x/2)/el_size[0], (tree.y*el_size[1]+tree.size_y/2)/el_size[1], 0.05, 0, 150, 10)
 		if tree.to_be_removed:
 			to_kill.append(tree)
 	for k in to_kill:
 		my_map.trees.remove(k)
-		collidable_objects.remove(k)
-
-def add_bullet(x, y, vx, vy, life=100, dmg=2):
-	b = Bullet(x, y, vx, vy, life, dmg)
-	my_map.monsters.append(b)
-	collidable_objects.append(b)
-	tickable_objects.append(b)
+		my_map.collidable_objects.remove(k)
 
 def game_draw():
 	global knight
 	global screen, background, width, height, monster_view, tree_view, map_view, my_map
-	global go_to_play_mode, go_to_menu_mode, tickable_objects, collidable_objects
-	for o in tickable_objects:
-		o.tick(knight, move, map_view, collidable_objects)
+	global go_to_play_mode, go_to_menu_mode, is_ticking_freezed
+	if not is_ticking_freezed:
+		for o in my_map.tickable_objects:
+			o.tick(knight, move, map_view, my_map)
 	background = create_background(screen, width, height)
 	screen.blit(background, (0, 0))
 	screen.blit(sprites[knight.type][0], (knight.x, knight.y))
@@ -349,6 +346,8 @@ def game_draw():
 
 	draw_text(screen, 2, 0, 'HP: ' + str(knight.life) + '/100')
 	draw_text(screen, 2, 20, 'Ammo: ' + str(knight.ammo))
+	if is_ticking_freezed:
+		draw_text(screen, 2, 40, 'Monsters are freezed')
 	if knight.life < 1:
 		print('The player died!')
 		go_to_menu()
@@ -378,12 +377,11 @@ def game_draw():
 
 
 def start_game():
-	global my_map, global_state, monsters, map_view, move, width, height, collidable_objects
+	global my_map, global_state, monsters, map_view, move, width, height
 	global exit_enter_sound_effect, sound_effect_delay, go_to_play_mode, knight
 	exit_enter_sound_effect.play()
 	pygame.time.wait(sound_effect_delay)
 	my_map = Map()
-	collidable_objects = my_map.monsters + my_map.trees
 	map_view = [16*el_size[0], 9*el_size[1]]
 	move = [0, 0]
 	knight = Knight(7.5*el_size[0], 3.5*el_size[1], el_size[0], el_size[1])
